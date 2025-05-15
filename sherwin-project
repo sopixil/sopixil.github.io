@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Colorant Tester</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #main-box {
+      width: 200px;
+      height: 200px;
+      background-color: white;
+      margin: 0 auto 20px;
+      border: 2px solid #ccc;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #total-display {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .swatch-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 70px;
+      padding: 6px;
+      background: #f4f4f4;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+
+    .swatch-name {
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: capitalize;
+      font-weight: bold;
+    }
+
+    .swatch-color {
+      width: 40px;
+      height: 60px;
+      border: 1px solid #000;
+      margin: 4px 0;
+    }
+
+    .count {
+      font-size: 11px;
+      margin: 2px 0;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+    }
+
+    button {
+      font-size: 9px;
+      padding: 3px;
+      min-width: 28px;
+      cursor: pointer;
+    }
+
+    select {
+      font-size: 12px;
+      padding: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main-box"></div>
+  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
+
+  <div id="controls">
+    <button id="reset-btn" onclick="resetColors()">Reset</button>
+    <label for="base-select">Base White:</label>
+    <select id="base-select" onchange="changeBaseWhite()">
+      <option value="1">Ultradeep</option>
+      <option value="4">Deep</option>
+      <option value="10" selected>Extra White</option>
+    </select>
+  </div>
+
+  <div class="swatch-container" id="swatch-row"></div>
+
+  <script>
+    const colors = {
+      white:   [255, 255, 255],
+      black:   [43, 43, 43],
+      red:     [191, 45, 50],
+      yellow:  [255, 215, 0],
+      blue:    [0, 0, 255],
+      green:   [0, 128, 0],
+      maroon:  [108, 37, 43],
+      magenta: [255, 0, 255],
+      umber:   [99, 81, 71],
+      gold:    [184, 134, 11]
+    };
+
+    const FRACTIONS = [
+      { label: "1oz", value: 1 },
+      { label: "1/32", value: 1/32 },
+      { label: "1/64", value: 1/64 },
+      { label: "1/128", value: 1/128 }
+    ];
+
+    let BASE_WHITE = 10;
+    const MAX_TOTAL = 12;
+    let counts = {};
+    for (let c in colors) counts[c] = 0;
+
+    const container = document.getElementById("swatch-row");
+
+    for (let name in colors) {
+      const rgb = `rgb(${colors[name][0]}, ${colors[name][1]}, ${colors[name][2]})`;
+
+      const swatch = document.createElement("div");
+      swatch.className = "swatch";
+
+      const addGroup = FRACTIONS.map(f =>
+        `<button onclick="adjustColor('${name}', ${f.value})">${f.label}</button>`
+      ).join('');
+
+      const removeGroup = FRACTIONS.map(f =>
+        `<button onclick="adjustColor('${name}', -${f.value})">${f.label}</button>`
+      ).join('');
+
+      swatch.innerHTML = `
+        <div class="swatch-name">${name}</div>
+        <div class="button-group">${addGroup}</div>
+        <div class="count" id="count-${name}">0.000</div>
+        <div class="swatch-color" style="background-color: ${rgb};"></div>
+        <div class="button-group">${removeGroup}</div>
+      `;
+
+      container.appendChild(swatch);
+    }
+
+    function adjustColor(color, delta) {
+      let newAmt = counts[color] + delta;
+      if (newAmt < 0) return;
+      let total = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (delta > 0 && total + delta > MAX_TOTAL) return;
+
+      counts[color] = newAmt;
+      document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);
+      updateColor();
+    }
+
+    function resetColors() {
+      for (let color in counts) {
+        counts[color] = 0;
+        document.getElementById(`count-${color}`).textContent = '0.000';
+      }
+      updateColor();
+    }
+
+    function changeBaseWhite() {
+      BASE_WHITE = parseFloat(document.getElementById("base-select").value);
+      updateColor();
+    }
+
+    function updateColor() {
+      let total = BASE_WHITE;
+      let r = 255 * BASE_WHITE;
+      let g = 255 * BASE_WHITE;
+      let b = 255 * BASE_WHITE;
+
+      for (let c in counts) {
+        let amt = counts[c];
+        total += amt;
+        r += colors[c][0] * amt;
+        g += colors[c][1] * amt;
+        b += colors[c][2] * amt;
+      }
+
+      r = Math.round(r / total);
+      g = Math.round(g / total);
+      b = Math.round(b / total);
+
+      document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+      let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
+      document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
+    }
+
+    updateColor();
+  </script>
+
+</body>
+</html>
