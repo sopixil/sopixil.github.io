@@ -1,25 +1,50 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Sopixil Portfolio</title>
-    <style>
-      header {
-        background-color: gray;
-        height: 25vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;  
-        }
-        h1 {
-        color: white;
-        font-size: 2rem;
-        }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1> Sopixil's Portfolio </h1>
-    </header>
-    <b>testing some stuff out my dudes</b>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sopixil's Portfolio</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+    .header {
+      background-color: #b8860b; /* deep gold */
+      color: white;
+      padding: 15px 0;
+      font-size: 1.5em;
+      font-weight: 300;
+    }
+    .button-container {
+      margin: 40px auto;
+    }
+    .nav-button {
+      background-color: #b8860b;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .nav-button:hover {
+      background-color: #a67908;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">Sopixil's Portfolio</div>
+
+  <div class="button-container">
+    <button class="nav-button" onclick="location.href='sherwin-project.html'">
+      Sherwin Colour Project
+    </button>
+  </div>
+
+</body>
 </html>
