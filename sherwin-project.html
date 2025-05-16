@@ -1,131 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Colorant Tester</title>
   <style>
     :root {
       --scale: 2;
-    }
+    }body {
+  font-family: sans-serif;
+  text-align: center;
+  padding: 20px;
+  font-size: calc(1em * var(--scale));
+}
 
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-      font-size: calc(1em * var(--scale));
-    }
+#home-btn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background-color: #b8860b;
+  color: white;
+  padding: calc(6px * var(--scale)) calc(12px * var(--scale));
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 999;
+  font-size: calc(0.75em * var(--scale));
+}
 
-    #home-btn {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background-color: #b8860b;
-      color: white;
-      padding: calc(6px * var(--scale)) calc(12px * var(--scale));
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 999;
-      font-size: calc(0.75em * var(--scale));
-    }
+#main-box {
+  width: 200px;
+  height: 200px;
+  background-color: white;
+  margin: 0 auto 20px;
+  border: 2px solid #ccc;
+}
 
-    #main-box {
-      width: 200px;
-      height: 200px;
-      background-color: white;
-      margin: 0 auto 20px;
-      border: 2px solid #ccc;
-    }
+#controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: calc(10px * var(--scale));
+  margin-bottom: calc(20px * var(--scale));
+}
 
-    #controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: calc(10px * var(--scale));
-      margin-bottom: calc(20px * var(--scale));
-    }
+#total-display {
+  font-weight: bold;
+  margin-bottom: calc(10px * var(--scale));
+}
 
-    #total-display {
-      font-weight: bold;
-      margin-bottom: calc(10px * var(--scale));
-    }
+.swatch-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+}
 
-    .swatch-wrapper {
-      display: flex;
-      justify-content: center;
-      margin: 0 auto;
-    }
+.swatch-container {
+  display: grid;
+  grid-template-columns: repeat(10, auto);
+  gap: calc(10px * var(--scale));
+}
 
-    .swatch-container {
-      display: grid;
-      grid-template-columns: repeat(10, auto);
-      gap: calc(10px * var(--scale));
-    }
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(70px * var(--scale));
+  padding: calc(6px * var(--scale));
+  background: #f4f4f4;
+  border-radius: 6px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
 
-    .swatch {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: calc(70px * var(--scale));
-      padding: calc(6px * var(--scale));
-      background: #f4f4f4;
-      border-radius: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
-    }
+.swatch-name {
+  font-size: calc(12px * var(--scale));
+  margin-bottom: 4px;
+  text-transform: capitalize;
+  font-weight: bold;
+}
 
-    .swatch-name {
-      font-size: calc(12px * var(--scale));
-      margin-bottom: 4px;
-      text-transform: capitalize;
-      font-weight: bold;
-    }
+.swatch-color {
+  width: calc(40px * var(--scale));
+  height: calc(60px * var(--scale));
+  border: 1px solid #000;
+  margin: calc(4px * var(--scale)) 0;
+}
 
-    .swatch-color {
-      width: calc(40px * var(--scale));
-      height: calc(60px * var(--scale));
-      border: 1px solid #000;
-      margin: calc(4px * var(--scale)) 0;
-    }
+.count {
+  font-size: calc(11px * var(--scale));
+  margin: calc(2px * var(--scale)) 0;
+}
 
-    .count {
-      font-size: calc(11px * var(--scale));
-      margin: calc(2px * var(--scale)) 0;
-    }
+.button-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(2px * var(--scale));
+}
 
-    .button-group {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: calc(2px * var(--scale));
-    }
+button {
+  font-size: calc(9px * var(--scale));
+  padding: calc(3px * var(--scale));
+  min-width: calc(28px * var(--scale));
+  cursor: pointer;
+}
 
-    button {
-      font-size: calc(9px * var(--scale));
-      padding: calc(3px * var(--scale));
-      min-width: calc(28px * var(--scale));
-      cursor: pointer;
-    }
+select {
+  font-size: calc(12px * var(--scale));
+  padding: calc(3px * var(--scale));
+}
 
-    select {
-      font-size: calc(12px * var(--scale));
-      padding: calc(3px * var(--scale));
-    }
+@media (max-width: 48em), (pointer: coarse) {
+  .swatch-container {
+    grid-template-columns: repeat(5, auto);
+  }
+}
 
-    @media (max-width: 48em), (pointer: coarse) {
-      .swatch-container {
-        grid-template-columns: repeat(5, auto);
-      }
-    }
   </style>
 </head>
-<body>
-
-  <button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
+<body><button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
 
   <div id="main-box"></div>
-  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
-
-  <div id="controls">
+  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>  <div id="controls">
     <button id="reset-btn" onclick="resetColors()">Reset</button>
     <label for="base-select">Base:</label>
     <select id="base-select" onchange="changeBaseWhite()">
@@ -133,141 +127,153 @@
       <option value="4">Deep</option>
       <option value="10" selected>Extra White</option>
     </select>
-  </div>
-
-  <div class="swatch-wrapper">
+  </div>  <div class="swatch-wrapper">
     <div class="swatch-container" id="swatch-row"></div>
-  </div>
+  </div>  <script>
+    const colors = {
+      white:   [255, 255, 255],
+      black:   [43, 43, 43],
+      red:     [191, 45, 50],
+      yellow:  [255, 215, 0],
+      blue:    [0, 0, 255],
+      green:   [0, 128, 0],
+      maroon:  [108, 37, 43],
+      magenta: [255, 0, 255],
+      umber:   [99, 81, 71],
+      gold:    [184, 134, 11]
+    };
 
- <script>
-  const BASE_COLOR_WEIGHT = 10;
-  const MAX_TOTAL = 12;
-
-  const colors = {
-    white:   [255, 255, 255],
-    black:   [43, 43, 43],
-    red:     [191, 45, 50],
-    yellow:  [255, 215, 0],
-    blue:    [0, 0, 255],
-    green:   [0, 128, 0],
-    maroon:  [108, 37, 43],
-    magenta: [255, 0, 255],
-    umber:   [99, 81, 71],
-    gold:    [184, 134, 11]
-  };
-
-  const FRACTIONS = [
-    { label: "1oz", value: 1 },
-    { label: "1/32", value: 1/32 },
-    { label: "1/64", value: 1/64 },
-    { label: "1/128", value: 1/128 }
-  ];
-
-  let counts = {};
-  for (let c in colors) counts[c] = 0;
-
-  let BASE_OVERRIDE = null;
-  let loadedFromPicker = false;
-
-  function parseHexColor(hex) {
-    if (!hex || !hex.startsWith('#') || (hex.length !== 7 && hex.length !== 4)) return null;
-    if (hex.length === 4) {
-      hex = '#' + [...hex.slice(1)].map(x => x + x).join('');
-    }
-    const bigint = parseInt(hex.slice(1), 16);
-    return [
-      (bigint >> 16) & 255,
-      (bigint >> 8) & 255,
-      bigint & 255
+    const FRACTIONS = [
+      { label: "1oz", value: 1 },
+      { label: "1/32", value: 1/32 },
+      { label: "1/64", value: 1/64 },
+      { label: "1/128", value: 1/128 }
     ];
-  }
 
-  function getBaseColorRGB() {
-    if (BASE_OVERRIDE) return BASE_OVERRIDE;
-    return colors.white;
-  }
+    let BASE_WHITE = 10;
+    let BASE_OVERRIDE = null;
+    const MAX_TOTAL = 12;
+    let loadedFromPicker = false;
+    const BASE_OVERRIDE_WEIGHT = 10;
 
-  function getBaseColorWeight() {
-    if (BASE_OVERRIDE) return BASE_COLOR_WEIGHT;
-    const baseVal = parseFloat(document.getElementById("base-select").value);
-    return isNaN(baseVal) ? BASE_COLOR_WEIGHT : baseVal;
-  }
+    let counts = {};
+    for (let c in colors) counts[c] = 0;
 
-  function adjustColor(color, delta) {
-    const newAmt = counts[color] + delta;
-    if (newAmt < 0) return;
+    const container = document.getElementById("swatch-row");
 
-    let total = Object.values(counts).reduce((a, b) => a + b, 0);
-    if (delta > 0 && total + delta > MAX_TOTAL) return;
+    for (let name in colors) {
+      const rgb = `rgb(${colors[name][0]}, ${colors[name][1]}, ${colors[name][2]})`;
 
-    counts[color] = newAmt;
-    document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);
-    updateColor();
-  }
+      const swatch = document.createElement("div");
+      swatch.className = "swatch";
 
-  function resetColors() {
-    for (let color in counts) {
-      counts[color] = 0;
-      document.getElementById(`count-${color}`).textContent = '0.000';
+      const addGroup = FRACTIONS.map(f =>
+        `<button onclick=\"adjustColor('${name}', ${f.value})\">${f.label}</button>`
+      ).join('');
+
+      const removeGroup = FRACTIONS.map(f =>
+        `<button onclick=\"adjustColor('${name}', -${f.value})\">${f.label}</button>`
+      ).join('');
+
+      swatch.innerHTML = `
+        <div class="swatch-name">${name}</div>
+        <div class="button-group">${addGroup}</div>
+        <div class="count" id="count-${name}">0.000</div>
+        <div class="swatch-color" style="background-color: ${rgb};"></div>
+        <div class="button-group">${removeGroup}</div>
+      `;
+
+      container.appendChild(swatch);
     }
-    BASE_OVERRIDE = null;
-    loadedFromPicker = false;
-    document.getElementById("base-select").disabled = false;
-    updateColor();
-  }
 
-  function changeBaseWhite() {
-    if (!loadedFromPicker) {
-      BASE_OVERRIDE = null;
+    function adjustColor(color, delta) {
+      let newAmt = (counts[color] || 0) + delta;
+      if (newAmt < 0) return;
+      let total = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (delta > 0 && total + delta > MAX_TOTAL) return;
+      counts[color] = newAmt;
+      document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);
       updateColor();
     }
-  }
 
-  function updateColor() {
-    const baseRGB = getBaseColorRGB();
-    const baseWeight = getBaseColorWeight();
-
-    let totalWeight = baseWeight;
-    let r = baseRGB[0] * baseWeight;
-    let g = baseRGB[1] * baseWeight;
-    let b = baseRGB[2] * baseWeight;
-
-    for (let c in counts) {
-      const amt = counts[c];
-      r += colors[c][0] * amt;
-      g += colors[c][1] * amt;
-      b += colors[c][2] * amt;
-      totalWeight += amt;
+    function resetColors() {
+      for (let color in counts) {
+        counts[color] = 0;
+        document.getElementById(`count-${color}`).textContent = '0.000';
+      }
+      BASE_OVERRIDE = null;
+      loadedFromPicker = false;
+      document.getElementById("base-select").disabled = false;
+      BASE_WHITE = parseFloat(document.getElementById("base-select").value);
+      updateColor();
     }
 
-    if (totalWeight === 0) {
-      r = g = b = 255;
-    } else {
-      r = Math.round(r / totalWeight);
-      g = Math.round(g / totalWeight);
-      b = Math.round(b / totalWeight);
-    }
-
-    document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-
-    let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
-    document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
-  }
-
-  window.addEventListener("DOMContentLoaded", () => {
-    const referrer = document.referrer || '';
-    if (referrer.includes("camera-app.html")) {
-      const picked = localStorage.getItem("pickedColor");
-      const parsed = parseHexColor(picked);
-      if (parsed) {
-        BASE_OVERRIDE = parsed;
-        loadedFromPicker = true;
-        document.getElementById("base-select").disabled = true;
+    function changeBaseWhite() {
+      if (!loadedFromPicker) {
+        BASE_WHITE = parseFloat(document.getElementById("base-select").value);
+        BASE_OVERRIDE = null;
+        updateColor();
       }
     }
-    updateColor();
-  });
- </script>
 
-</body>
+    function updateColor() {
+      let r = 0, g = 0, b = 0, total = 0;
+
+      if (BASE_OVERRIDE) {
+        r += BASE_OVERRIDE[0] * BASE_OVERRIDE_WEIGHT;
+        g += BASE_OVERRIDE[1] * BASE_OVERRIDE_WEIGHT;
+        b += BASE_OVERRIDE[2] * BASE_OVERRIDE_WEIGHT;
+        total += BASE_OVERRIDE_WEIGHT;
+      } else {
+        r += 255 * BASE_WHITE;
+        g += 255 * BASE_WHITE;
+        b += 255 * BASE_WHITE;
+        total += BASE_WHITE;
+      }
+
+      for (let c in counts) {
+        let amt = counts[c];
+        r += colors[c][0] * amt;
+        g += colors[c][1] * amt;
+        b += colors[c][2] * amt;
+        total += amt;
+      }
+
+      r = Math.round(r / total);
+      g = Math.round(g / total);
+      b = Math.round(b / total);
+
+      document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+      let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
+      document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
+    }
+
+    function parseHexColor(hex) {
+      if (!hex || !hex.startsWith('#') || (hex.length !== 7 && hex.length !== 4)) return null;
+      if (hex.length === 4) {
+        hex = '#' + [...hex.slice(1)].map(x => x + x).join('');
+      }
+      const bigint = parseInt(hex.slice(1), 16);
+      return [
+        (bigint >> 16) & 255,
+        (bigint >> 8) & 255,
+        bigint & 255
+      ];
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const referrer = document.referrer || '';
+      if (referrer.includes("camera-app.html")) {
+        const picked = localStorage.getItem("pickedColor");
+        const parsed = parseHexColor(picked);
+        if (parsed) {
+          BASE_OVERRIDE = parsed;
+          loadedFromPicker = true;
+          document.getElementById("base-select").disabled = true;
+        }
+      }
+      updateColor();
+    });
+  </script></body>
 </html>
