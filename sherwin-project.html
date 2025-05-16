@@ -4,10 +4,15 @@
   <meta charset="UTF-8" />
   <title>Colorant Tester</title>
   <style>
+    :root {
+      --scale: 1.5;
+    }
+
     body {
       font-family: sans-serif;
       text-align: center;
       padding: 20px;
+      font-size: calc(1em * var(--scale));
     }
 
     #home-btn {
@@ -16,12 +21,13 @@
       left: 10px;
       background-color: #b8860b;
       color: white;
-      padding: 6px 12px;
+      padding: calc(6px * var(--scale)) calc(12px * var(--scale));
       border: none;
       border-radius: 4px;
       font-weight: bold;
       cursor: pointer;
       z-index: 999;
+      font-size: calc(0.75em * var(--scale));
     }
 
     #main-box {
@@ -36,85 +42,82 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: calc(10px * var(--scale));
+      margin-bottom: calc(20px * var(--scale));
     }
 
     #total-display {
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: calc(10px * var(--scale));
     }
 
     .swatch-container {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      gap: 10px;
+      gap: calc(10px * var(--scale));
       max-width: 1000px;
       margin: 0 auto;
     }
-  
 
     .swatch {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 70px;
-      padding: 6px;
+      width: calc(70px * var(--scale));
+      padding: calc(6px * var(--scale));
       background: #f4f4f4;
       border-radius: 6px;
       box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
 
     .swatch-name {
-      font-size: 12px;
+      font-size: calc(12px * var(--scale));
       margin-bottom: 4px;
       text-transform: capitalize;
       font-weight: bold;
     }
 
     .swatch-color {
-      width: 40px;
-      height: 60px;
+      width: calc(40px * var(--scale));
+      height: calc(60px * var(--scale));
       border: 1px solid #000;
-      margin: 4px 0;
+      margin: calc(4px * var(--scale)) 0;
     }
 
     .count {
-      font-size: 11px;
-      margin: 2px 0;
+      font-size: calc(11px * var(--scale));
+      margin: calc(2px * var(--scale)) 0;
     }
 
     .button-group {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 2px;
+      gap: calc(2px * var(--scale));
     }
 
     button {
-      font-size: 9px;
-      padding: 3px;
-      min-width: 28px;
+      font-size: calc(9px * var(--scale));
+      padding: calc(3px * var(--scale));
+      min-width: calc(28px * var(--scale));
       cursor: pointer;
     }
 
     select {
-      font-size: 12px;
-      padding: 3px;
+      font-size: calc(12px * var(--scale));
+      padding: calc(3px * var(--scale));
     }
-    
-  @media (max-width: 48em), (pointer: coarse) {
-    .swatch-container {
-      grid-template-columns: repeat(5, 1fr);
-      max-width: 90vw;
+
+    @media (max-width: 48em), (pointer: coarse) {
+      .swatch-container {
+        grid-template-columns: repeat(5, 1fr);
+        max-width: 90vw;
+      }
     }
-  }
-
-
   </style>
 </head>
 <body>
 
-  <button id="home-btn" onclick="window.location.href='/index.html'">Go Back Home</button>
+  <button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
 
   <div id="main-box"></div>
   <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
