@@ -8,6 +8,16 @@
       --scale: 1.5;
     }
 
+    @media (max-width: 48em), (pointer: coarse) {
+      :root {
+        --scale: 2;
+      }
+
+      .swatch-container {
+        grid-template-columns: repeat(5, auto);
+      }
+    }
+
     body {
       font-family: sans-serif;
       text-align: center;
@@ -109,12 +119,6 @@
     select {
       font-size: calc(12px * var(--scale));
       padding: calc(3px * var(--scale));
-    }
-
-    @media (max-width: 48em), (pointer: coarse) {
-      .swatch-container {
-        grid-template-columns: repeat(5, auto);
-      }
     }
   </style>
 </head>
