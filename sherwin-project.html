@@ -51,12 +51,16 @@
       margin-bottom: calc(10px * var(--scale));
     }
 
+    .swatch-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+    }
+
     .swatch-container {
       display: grid;
-      grid-template-columns: repeat(10, 1fr);
+      grid-template-columns: repeat(10, auto);
       gap: calc(10px * var(--scale));
-      max-width: 1000px;
-      margin: 0 auto;
     }
 
     .swatch {
@@ -109,8 +113,7 @@
 
     @media (max-width: 48em), (pointer: coarse) {
       .swatch-container {
-        grid-template-columns: repeat(5, 1fr);
-        max-width: 90vw;
+        grid-template-columns: repeat(5, auto);
       }
     }
   </style>
@@ -132,7 +135,9 @@
     </select>
   </div>
 
-  <div class="swatch-container" id="swatch-row"></div>
+  <div class="swatch-wrapper">
+    <div class="swatch-container" id="swatch-row"></div>
+  </div>
 
   <script>
     const colors = {
