@@ -1,159 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Colorant Tester</title>
-<style>
-:root{--scale:2;}
-body{font-family:sans-serif;text-align:center;padding:20px;font-size:calc(1em*var(--scale));}
-#home-btn{position:fixed;top:10px;left:10px;background:#b8860b;color:#fff;padding:calc(6px*var(--scale)) calc(12px*var(--scale));border:none;border-radius:4px;font-weight:bold;cursor:pointer;z-index:999;font-size:calc(0.75em*var(--scale));}
-#main-box{width:200px;height:200px;background:#fff;margin:0 auto 20px;border:2px solid #ccc;}
-#controls{display:flex;justify-content:center;align-items:center;gap:calc(10px*var(--scale));margin-bottom:calc(20px*var(--scale));}
-#total-display{font-weight:bold;margin-bottom:calc(10px*var(--scale));}
-#sherwin-color{font-weight:bold;margin-bottom:10px;font-size:0.8em;}
-.swatch-wrapper{display:flex;justify-content:center;margin:0 auto;}
-.swatch-container{display:grid;grid-template-columns:repeat(10,auto);gap:calc(10px*var(--scale));}
-.swatch{display:flex;flex-direction:column;align-items:center;width:calc(70px*var(--scale));padding:calc(6px*var(--scale));background:#f4f4f4;border-radius:6px;box-shadow:0 0 4px rgba(0,0,0,0.1);}
-.swatch-name{font-size:calc(12px*var(--scale));margin-bottom:4px;text-transform:capitalize;font-weight:bold;}
-.swatch-color{width:calc(40px*var(--scale));height:calc(60px*var(--scale));border:1px solid #000;margin:calc(4px*var(--scale)) 0;}
-.count{font-size:calc(11px*var(--scale));margin:calc(2px*var(--scale)) 0;}
-.button-group{display:grid;grid-template-columns:repeat(2,1fr);gap:calc(2px*var(--scale));}
-button{font-size:calc(9px*var(--scale));padding:calc(3px*var(--scale));min-width:calc(28px*var(--scale));cursor:pointer;}
-select{font-size:calc(12px*var(--scale));padding:calc(3px*var(--scale));}
-@media (max-width:48em),(pointer:coarse){.swatch-container{grid-template-columns:repeat(5,auto);}}
-</style>
-</head>
-<body>
-<button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
-<div id="main-box"></div>
-<div id="total-display">Total Added: 0.000 oz / 12 oz</div>
-<div id="sherwin-color">Loading closest Sherwin color...</div>
-<div id="controls">
-<button id="reset-btn" onclick="resetColors()">Reset</button>
-<label for="base-select">Base:</label>
-<select id="base-select" onchange="changeBaseWhite()">
-<option value="1">Ultradeep</option>
-<option value="4">Deep</option>
-<option value="10" selected>Extra White</option>
-</select>
-</div>
-<div class="swatch-wrapper">
-<div class="swatch-container" id="swatch-row"></div>
-</div>
-<script>
-const colors={white:[255,255,255],black:[43,43,43],red:[191,45,50],yellow:[255,215,0],blue:[0,0,255],green:[0,128,0],maroon:[108,37,43],magenta:[255,0,255],umber:[99,81,71],gold:[184,134,11]};
-const FRACTIONS=[{label:"1oz",value:1},{label:"1/32",value:1/32},{label:"1/64",value:1/64},{label:"1/128",value:1/128}];
-let BASE_WHITE=10;
-const MAX_TOTAL=12;
-let counts={};
-for(let c in colors) counts[c]=0;
-const container=document.getElementById("swatch-row");
-const mainBox=document.getElementById("main-box");
-const totalDisplay=document.getElementById("total-display");
-const sherwinDisplay=document.getElementById("sherwin-color");
-for(let name in colors){
-  const rgb=`rgb(${colors[name][0]},${colors[name][1]},${colors[name][2]})`;
-  const swatch=document.createElement("div");
-  swatch.className="swatch";
-  const addGroup=FRACTIONS.map(f=>`<button onclick="adjustColor('${name}',${f.value})">${f.label}</button>`).join('');
-  const removeGroup=FRACTIONS.map(f=>`<button onclick="adjustColor('${name}',-${f.value})">${f.label}</button>`).join('');
-  swatch.innerHTML=`<div class="swatch-name">${name}</div><div class="button-group">${addGroup}</div><div class="count" id="count-${name}">0.000</div><div class="swatch-color" style="background-color:${rgb};"></div><div class="button-group">${removeGroup}</div>`;
-  container.appendChild(swatch);
-}
-function adjustColor(color,delta){
-  let newAmt=counts[color]+delta;
-  if(newAmt<0)return;
-  let total=Object.values(counts).reduce((a,b)=>a+b,0);
-  if(delta>0&&total+delta>MAX_TOTAL)return;
-  counts[color]=newAmt;
-  document.getElementById(`count-${color}`).textContent=newAmt.toFixed(3);
-  updateColor();
-}
-function resetColors(){
-  for(let color in counts){
-    counts[color]=0;
-    document.getElementById(`count-${color}`).textContent='0.000';
-  }
-  BASE_WHITE=10;
-  document.getElementById("base-select").value=BASE_WHITE.toString();
-  updateColor();
-}
-function changeBaseWhite(){
-  BASE_WHITE=parseFloat(document.getElementById("base-select").value);
-  updateColor();
-}
-let sherwinColors=[];
-fetch('allsherwincolours.txt').then(r=>r.text()).then(t=>{
-  const lines=t.split('\n');
-  lines.forEach(line=>{
-    line=line.trim();
-    if(!line)return;
-    let parts=line.split(/\s+/);
-    if(parts.length<7)return;
-    let code=parts[0];
-    if(!code.startsWith('SW'))return;
-    let nameParts=[];
-    let rgb=[];
-    for(let i=1;i<parts.length;i++){
-      let val=parts[i];
-      if(rgb.length<3&&/^\d+$/.test(val)){
-        rgb.push(parseInt(val));
-      }else if(rgb.length<3){
-        nameParts.push(val);
+  <meta charset="UTF-8" />
+  <title>Colorant Tester</title>
+  <style>
+    :root {
+      --scale: 2;
+    }
+
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      font-size: calc(1em * var(--scale));
+    }
+
+    #home-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: #b8860b;
+      color: white;
+      padding: calc(6px * var(--scale)) calc(12px * var(--scale));
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 999;
+      font-size: calc(0.75em * var(--scale));
+    }
+
+    #main-box {
+      width: 200px;
+      height: 200px;
+      background-color: white;
+      margin: 0 auto 20px;
+      border: 2px solid #ccc;
+    }
+
+    #match-display {
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: calc(10px * var(--scale));
+      margin-bottom: calc(20px * var(--scale));
+    }
+
+    #total-display {
+      font-weight: bold;
+      margin-bottom: calc(10px * var(--scale));
+    }
+
+    .swatch-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+    }
+
+    .swatch-container {
+      display: grid;
+      grid-template-columns: repeat(10, auto);
+      gap: calc(10px * var(--scale));
+    }
+
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: calc(70px * var(--scale));
+      padding: calc(6px * var(--scale));
+      background: #f4f4f4;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+
+    .swatch-name {
+      font-size: calc(12px * var(--scale));
+      margin-bottom: 4px;
+      text-transform: capitalize;
+      font-weight: bold;
+    }
+
+    .swatch-color {
+      width: calc(40px * var(--scale));
+      height: calc(60px * var(--scale));
+      border: 1px solid #000;
+      margin: calc(4px * var(--scale)) 0;
+    }
+
+    .count {
+      font-size: calc(11px * var(--scale));
+      margin: calc(2px * var(--scale)) 0;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: calc(2px * var(--scale));
+    }
+
+    button {
+      font-size: calc(9px * var(--scale));
+      padding: calc(3px * var(--scale));
+      min-width: calc(28px * var(--scale));
+      cursor: pointer;
+    }
+
+    select {
+      font-size: calc(12px * var(--scale));
+      padding: calc(3px * var(--scale));
+    }
+
+    @media (max-width: 48em), (pointer: coarse) {
+      .swatch-container {
+        grid-template-columns: repeat(5, auto);
       }
     }
-    let name=nameParts.join(' ').toLowerCase();
-    if(rgb.length===3){
-      sherwinColors.push({code,name,rgb});
+  </style>
+</head>
+<body>
+
+  <button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
+
+  <div id="main-box"></div>
+  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
+  <div id="match-display">Closest Sherwin Color: (loading...)</div>
+
+  <div id="controls">
+    <button id="reset-btn" onclick="resetColors()">Reset</button>
+    <label for="base-select">Base:</label>
+    <select id="base-select" onchange="changeBaseWhite()">
+      <option value="1">Ultradeep</option>
+      <option value="4">Deep</option>
+      <option value="10" selected>Extra White</option>
+    </select>
+  </div>
+
+  <div class="swatch-wrapper">
+    <div class="swatch-container" id="swatch-row"></div>
+  </div>
+
+  <script>
+    const colors = {
+      white:   [255, 255, 255],
+      black:   [43, 43, 43],
+      red:     [191, 45, 50],
+      yellow:  [255, 215, 0],
+      blue:    [0, 0, 255],
+      green:   [0, 128, 0],
+      maroon:  [108, 37, 43],
+      magenta: [255, 0, 255],
+      umber:   [99, 81, 71],
+      gold:    [184, 134, 11]
+    };
+
+    const FRACTIONS = [
+      { label: "1oz", value: 1 },
+      { label: "1/32", value: 1/32 },
+      { label: "1/64", value: 1/64 },
+      { label: "1/128", value: 1/128 }
+    ];
+
+    let BASE_WHITE = 10;
+    const MAX_TOTAL = 12;
+    let counts = {};
+    for (let c in colors) counts[c] = 0;
+
+    const container = document.getElementById("swatch-row");
+
+    for (let name in colors) {
+      const rgb = `rgb(${colors[name][0]}, ${colors[name][1]}, ${colors[name][2]})`;
+
+      const swatch = document.createElement("div");
+      swatch.className = "swatch";
+
+      const addGroup = FRACTIONS.map(f =>
+        `<button onclick="adjustColor('${name}', ${f.value})">${f.label}</button>`
+      ).join('');
+
+      const removeGroup = FRACTIONS.map(f =>
+        `<button onclick="adjustColor('${name}', -${f.value})">${f.label}</button>`
+      ).join('');
+
+      swatch.innerHTML = `
+        <div class="swatch-name">${name}</div>
+        <div class="button-group">${addGroup}</div>
+        <div class="count" id="count-${name}">0.000</div>
+        <div class="swatch-color" style="background-color: ${rgb};"></div>
+        <div class="button-group">${removeGroup}</div>
+      `;
+
+      container.appendChild(swatch);
     }
-  });
-  updateColor();
-});
-function distanceRGB(c1,c2){
-  return Math.sqrt(
-    (c1[0]-c2[0])**2+
-    (c1[1]-c2[1])**2+
-    (c1[2]-c2[2])**2
-  );
-}
-function updateColor(){
-  let total=BASE_WHITE;
-  let r=255*BASE_WHITE;
-  let g=255*BASE_WHITE;
-  let b=255*BASE_WHITE;
-  for(let c in counts){
-    let amt=counts[c];
-    total+=amt;
-    r+=colors[c][0]*amt;
-    g+=colors[c][1]*amt;
-    b+=colors[c][2]*amt;
-  }
-  r=Math.round(r/total);
-  g=Math.round(g/total);
-  b=Math.round(b/total);
-  mainBox.style.backgroundColor=`rgb(${r},${g},${b})`;
-  let totalAdded=Object.values(counts).reduce((a,b)=>a+b,0);
-  totalDisplay.textContent=`Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
-  if(sherwinColors.length===0){
-    sherwinDisplay.textContent='Loading closest Sherwin color...';
-    return;
-  }
-  let bestMatch=null;
-  let bestDist=Infinity;
-  sherwinColors.forEach(col=>{
-    let dist=distanceRGB([r,g,b],col.rgb);
-    if(dist<bestDist){
-      bestDist=dist;
-      bestMatch=col;
+
+    function rgbToLab(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+      g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+      b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+      let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+      let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+      let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+      [x, y, z] = [x, y, z].map(v => v > 0.008856 ? Math.cbrt(v) : (7.787 * v + 16 / 116));
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
     }
-  });
-  if(bestMatch){
-    sherwinDisplay.textContent=`Closest Sherwin Color: ${bestMatch.code} ${bestMatch.name}`;
-  } else {
-    sherwinDisplay.textContent='No Sherwin color match found';
-  }
-}
-updateColor();
-</script>
+
+    let colorList = [];
+    fetch('allsherwincolours.txt')
+      .then(r => r.text())
+      .then(text => {
+        let entries = text.split(/SW\d{4}/g).slice(1);
+        let codes = text.match(/SW\d{4}/g);
+        entries.forEach((entry, i) => {
+          let parts = entry.trim().split(/\s+/);
+          let name = parts.slice(0, parts.indexOf("N/A")).join(" ");
+          let r = +parts[parts.indexOf("N/A") + 1];
+          let g = +parts[parts.indexOf("N/A") + 2];
+          let b = +parts[parts.indexOf("N/A") + 3];
+          colorList.push({ name, code: codes[i], r, g, b, lab: rgbToLab(r, g, b) });
+        });
+      });
+
+    function adjustColor(color, delta) {
+      let newAmt = counts[color] + delta;
+      if (newAmt < 0) return;
+      let total = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (delta > 0 && total + delta > MAX_TOTAL) return;
+
+      counts[color] = newAmt;
+      document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);
+      updateColor();
+    }
+
+    function resetColors() {
+      for (let color in counts) {
+        counts[color] = 0;
+        document.getElementById(`count-${color}`).textContent = '0.000';
+      }
+      updateColor();
+    }
+
+    function changeBaseWhite() {
+      BASE_WHITE = parseFloat(document.getElementById("base-select").value);
+      updateColor();
+    }
+
+    function updateColor() {
+      let total = BASE_WHITE;
+      let r = 255 * BASE_WHITE;
+      let g = 255 * BASE_WHITE;
+      let b = 255 * BASE_WHITE;
+
+      for (let c in counts) {
+        let amt = counts[c];
+        total += amt;
+        r += colors[c][0] * amt;
+        g += colors[c][1] * amt;
+        b += colors[c][2] * amt;
+      }
+
+      r = Math.round(r / total);
+      g = Math.round(g / total);
+      b = Math.round(b / total);
+
+      document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+      let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
+      document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
+
+      const currentLab = rgbToLab(r, g, b);
+      let closest = null, minDist = Infinity;
+      colorList.forEach(c => {
+        let d = Math.sqrt(
+          Math.pow(currentLab[0] - c.lab[0], 2) +
+          Math.pow(currentLab[1] - c.lab[1], 2) +
+          Math.pow(currentLab[2] - c.lab[2], 2)
+        );
+        if (d < minDist) {
+          minDist = d;
+          closest = c;
+        }
+      });
+      if (closest) document.getElementById("match-display").textContent = `Closest Sherwin Color: ${closest.code} ${closest.name}`;
+    }
+
+    updateColor();
+  </script>
+
 </body>
 </html>
