@@ -2,118 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Colorant Tester</title>
   <style>
-    :root {
-      --scale: 2;
-    }
-
     body {
       font-family: sans-serif;
       text-align: center;
-      padding: 20px;
-      font-size: calc(1em * var(--scale));
+      margin: 0;
+      padding: 0;
     }
-
-    #home-btn {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background-color: #b8860b;
-      color: white;
-      padding: calc(6px * var(--scale)) calc(12px * var(--scale));
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 999;
-      font-size: calc(0.75em * var(--scale));
+    .main {
+      padding: 1rem;
     }
-
-    #main-box {
+    .color-display {
       width: 200px;
       height: 200px;
-      background-color: white;
-      margin: 0 auto 20px;
-      border: 2px solid #ccc;
+      margin: 1rem auto;
+      border: 1px solid #000;
     }
-
-    #controls {
+    .swatch-grid {
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
-      align-items: center;
-      gap: calc(10px * var(--scale));
-      margin-bottom: calc(20px * var(--scale));
+      gap: 8px;
     }
-
-    #total-display {
-      font-weight: bold;
-      margin-bottom: calc(10px * var(--scale));
-    }
-
-    .swatch-wrapper {
-      display: flex;
-      justify-content: center;
-      margin: 0 auto;
-    }
-
-    .swatch-container {
-      display: grid;
-      grid-template-columns: repeat(10, auto);
-      gap: calc(10px * var(--scale));
-    }
-
     .swatch {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: calc(70px * var(--scale));
-      padding: calc(6px * var(--scale));
-      background: #f4f4f4;
-      border-radius: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      width: 60px;
     }
-
-    .swatch-name {
-      font-size: calc(12px * var(--scale));
-      margin-bottom: 4px;
-      text-transform: capitalize;
-      font-weight: bold;
-    }
-
     .swatch-color {
-      width: calc(40px * var(--scale));
-      height: calc(60px * var(--scale));
-      border: 1px solid #000;
-      margin: calc(4px * var(--scale)) 0;
+      width: 60px;
+      height: 20px;
+      margin: 4px 0;
     }
-
-    .count {
-      font-size: calc(11px * var(--scale));
-      margin: calc(2px * var(--scale)) 0;
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
-
-    .button-group {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: calc(2px * var(--scale));
+    .buttons button {
+      font-size: 0.75rem;
+      padding: 2px 4px;
     }
-
-    button {
-      font-size: calc(9px * var(--scale));
-      padding: calc(3px * var(--scale));
-      min-width: calc(28px * var(--scale));
-      cursor: pointer;
+    .controls {
+      margin: 1rem 0;
     }
-
-    select {
-      font-size: calc(12px * var(--scale));
-      padding: calc(3px * var(--scale));
+    #closestColor {
+      font-weight: bold;
+      margin: 0.5rem;
     }
-
-    @media (max-width: 48em), (pointer: coarse) {
-      .swatch-container {
-        grid-template-columns: repeat(5, auto);
+    @media (max-width: 600px) {
+      .swatch {
+        width: 80px;
+      }
+      .swatch-color {
+        width: 80px;
+      }
+      .buttons button {
+        font-size: 1rem;
       }
     }
   </style>
