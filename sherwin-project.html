@@ -48,6 +48,12 @@
   margin-bottom: calc(10px * var(--scale));
 }
 
+#closest-color {
+  font-size: calc(14px * var(--scale));
+  font-weight: bold;
+  margin-bottom: calc(12px * var(--scale));
+}
+
 .swatch-wrapper {
   display: flex;
   justify-content: center;
@@ -119,7 +125,8 @@ select {
 <body><button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>
 
   <div id="main-box"></div>
-  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>  <div id="controls">
+  <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
+  <div id="closest-color">Closest Sherwin-Williams Colour: N/A</div>  <div id="controls">
     <button id="reset-btn" onclick="resetColors()">Reset</button>
     <label for="base-select">Base:</label>
     <select id="base-select" onchange="changeBaseWhite()">
@@ -247,6 +254,8 @@ select {
 
       let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
       document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
+
+      findClosestColor([r, g, b]);
     }
 
     function parseHexColor(hex) {
@@ -260,6 +269,35 @@ select {
         (bigint >> 8) & 255,
         bigint & 255
       ];
+    }
+
+    async function findClosestColor(rgb) {
+      try {
+        const res = await fetch('allsherwincolours.txt');
+        const text = await res.text();
+        const entries = text.match(/SW\d+.*?(#[0-9a-fA-F]{6})/g);
+
+        let minDist = Infinity;
+        let closest = 'N/A';
+
+        for (let entry of entries) {
+          const hex = entry.match(/#[0-9a-fA-F]{6}/)[0];
+          const color = parseHexColor(hex);
+          const dist = Math.sqrt(
+            Math.pow(rgb[0] - color[0], 2) +
+            Math.pow(rgb[1] - color[1], 2) +
+            Math.pow(rgb[2] - color[2], 2)
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            closest = entry.split("\n")[0];
+          }
+        }
+
+        document.getElementById("closest-color").textContent = `Closest Sherwin-Williams Colour: ${closest}`;
+      } catch (err) {
+        document.getElementById("closest-color").textContent = "Closest Sherwin-Williams Colour: Error";
+      }
     }
 
     window.addEventListener("DOMContentLoaded", () => {
