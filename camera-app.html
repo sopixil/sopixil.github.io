@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Center Spot Color</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+
+    #container {
+      position: relative;
+      display: none;
+    }
+
+    #preview {
+      max-width: 100%;
+      display: block;
+    }
+
+    #overlayCircle {
+      position: absolute;
+      border: 2px solid red;
+      border-radius: 50%;
+      pointer-events: none;
+      width: 40px;
+      height: 40px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+    }
+
+    #cameraInput {
+      display: none;
+    }
+
+    #customButton {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #customButton:hover {
+      background-color: #0056b3;
+    }
+
+    #colorBox, #hexCode, #editButton {
+      display: none;
+    }
+
+    #colorBox {
+      width: 100px;
+      height: 100px;
+      margin: 10px auto;
+      border: 1px solid #ccc;
+    }
+
+    #editButton {
+      background-color: #b8860b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #editButton:hover {
+      background-color: #a07608;
+    }
+  </style>
+</head>
+<body>
+  <label for="cameraInput" id="customButton">Take Photo</label>
+  <input type="file" accept="image/*" capture="environment" id="cameraInput"><br><br>
+
+  <div id="container">
+    <img id="preview">
+    <div id="overlayCircle"></div>
+  </div><br>
+
+  <div id="colorBox"></div>
+  <p id="hexCode"></p>
+  <button id="editButton">Edit Colour</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const input = document.getElementById('cameraInput');
+    const preview = document.getElementById('preview');
+    const canvas = document.getElementById('canvas');
+    const colorBox = document.getElementById('colorBox');
+    const hexCode = document.getElementById('hexCode');
+    const overlayCircle = document.getElementById('overlayCircle');
+    const container = document.getElementById('container');
+    const editButton = document.getElementById('editButton');
+
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const centerX = Math.floor(img.width / 2);
+        const centerY = Math.floor(img.height / 2);
+        const radius = 20;
+
+        let r = 0, g = 0, b = 0, count = 0;
+        const data = ctx.getImageData(centerX - radius, centerY - radius, radius * 2, radius * 2);
+        for (let y = 0; y < radius * 2; y++) {
+          for (let x = 0; x < radius * 2; x++) {
+            const dx = x - radius;
+            const dy = y - radius;
+            if (dx * dx + dy * dy <= radius * radius) {
+              const index = (y * radius * 2 + x) * 4;
+              r += data.data[index];
+              g += data.data[index + 1];
+              b += data.data[index + 2];
+              count++;
+            }
+          }
+        }
+
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+
+        const hex = "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+
+        preview.src = img.src;
+        overlayCircle.style.display = 'block';
+        container.style.display = 'inline-block';
+        colorBox.style.backgroundColor = hex;
+        colorBox.style.display = 'block';
+        hexCode.textContent = `Center Spot Color: ${hex}`;
+        hexCode.style.display = 'block';
+        editButton.style.display = 'inline-block';
+
+        // Save to localStorage
+        localStorage.setItem('pickedColor', hex);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+
+    editButton.addEventListener('click', () => {
+      window.location.href = 'sherwin-project.html';
+    });
+  </script>
+</body>
+</html>
