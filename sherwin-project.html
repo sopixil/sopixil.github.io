@@ -35,6 +35,11 @@
   border: 2px solid #ccc;
 }
 
+#match-display {
+  font-weight: bold;
+  margin: 10px 0;
+}
+
 #controls {
   display: flex;
   justify-content: center;
@@ -46,12 +51,6 @@
 #total-display {
   font-weight: bold;
   margin-bottom: calc(10px * var(--scale));
-}
-
-#closest-color {
-  font-size: calc(1em * var(--scale));
-  margin-bottom: calc(10px * var(--scale));
-  font-weight: bold;
 }
 
 .swatch-wrapper {
@@ -126,7 +125,7 @@ select {
 
   <div id="main-box"></div>
   <div id="total-display">Total Added: 0.000 oz / 12 oz</div>
-  <div id="closest-color">Closest Sherwin Color: N/A</div>  <div id="controls">
+  <div id="match-display">Closest Sherwin Color: (loading...)</div>  <div id="controls">
     <button id="reset-btn" onclick="resetColors()">Reset</button>
     <label for="base-select">Base:</label>
     <select id="base-select" onchange="changeBaseWhite()">
@@ -189,6 +188,36 @@ select {
       container.appendChild(swatch);
     }
 
+    function rgbToLab(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+      g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+      b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+      let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+      let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+      let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+      [x, y, z] = [x, y, z].map(v => v > 0.008856 ? Math.cbrt(v) : (7.787 * v + 16 / 116));
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    }
+
+    let colorList = [];
+    fetch('allsherwincolours.txt')
+      .then(r => r.text())
+      .then(text => {
+        let entries = text.split(/SW\d{4}/g).slice(1);
+        let codes = text.match(/SW\d{4}/g);
+        entries.forEach((entry, i) => {
+          let parts = entry.trim().split(/\s+/);
+          let name = parts.slice(0, parts.indexOf("N/A")).join(" ");
+          let r = +parts[parts.indexOf("N/A") + 1];
+          let g = +parts[parts.indexOf("N/A") + 2];
+          let b = +parts[parts.indexOf("N/A") + 3];
+          colorList.push({ name, code: codes[i], r, g, b, lab: rgbToLab(r, g, b) });
+        });
+      });
+
     function adjustColor(color, delta) {
       let newAmt = counts[color] + delta;
       if (newAmt < 0) return;
@@ -213,7 +242,7 @@ select {
       updateColor();
     }
 
-    async function updateColor() {
+    function updateColor() {
       let total = BASE_WHITE;
       let r = 255 * BASE_WHITE;
       let g = 255 * BASE_WHITE;
@@ -231,34 +260,25 @@ select {
       g = Math.round(g / total);
       b = Math.round(b / total);
 
-      const rgbStr = `rgb(${r}, ${g}, ${b})`;
-      document.getElementById("main-box").style.backgroundColor = rgbStr;
+      document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
 
       let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);
       document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;
 
-      try {
-        const response = await fetch('allsherwincolours.txt');
-        const text = await response.text();
-        const matches = text.match(/SW\d{4} [^S]+?\d+ \d+ \d+ [A-Fa-f0-9]{6}/g);
-        let minDist = Infinity, bestMatch = "N/A";
-
-        for (let m of matches) {
-          const parts = m.split(/\s+/);
-          const nameIndex = 1;
-          const r2 = parseInt(parts[parts.length - 4]);
-          const g2 = parseInt(parts[parts.length - 3]);
-          const b2 = parseInt(parts[parts.length - 2]);
-          const dist = Math.sqrt((r - r2)**2 + (g - g2)**2 + (b - b2)**2);
-          if (dist < minDist) {
-            minDist = dist;
-            bestMatch = `${parts[0]} ${parts.slice(nameIndex, parts.length - 4).join(" ")}`;
-          }
+      const currentLab = rgbToLab(r, g, b);
+      let closest = null, minDist = Infinity;
+      colorList.forEach(c => {
+        let d = Math.sqrt(
+          Math.pow(currentLab[0] - c.lab[0], 2) +
+          Math.pow(currentLab[1] - c.lab[1], 2) +
+          Math.pow(currentLab[2] - c.lab[2], 2)
+        );
+        if (d < minDist) {
+          minDist = d;
+          closest = c;
         }
-        document.getElementById("closest-color").textContent = `Closest Sherwin Color: ${bestMatch}`;
-      } catch (e) {
-        document.getElementById("closest-color").textContent = "Closest Sherwin Color: Error loading file";
-      }
+      });
+      if (closest) document.getElementById("match-display").textContent = `Closest Sherwin Color: ${closest.code} ${closest.name}`;
     }
 
     updateColor();
