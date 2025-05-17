@@ -216,17 +216,18 @@
     fetch('allsherwincolours.txt')
       .then(r => r.text())
       .then(text => {
-        let entries = text.split(/SW\d{4}/g).slice(1);
-        let codes = text.match(/SW\d{4}/g);
-        entries.forEach((entry, i) => {
-          let parts = entry.trim().split(/\s+/);
-          let name = parts.slice(0, parts.indexOf("N/A")).join(" ");
-          let r = +parts[parts.indexOf("N/A") + 1];
-          let g = +parts[parts.indexOf("N/A") + 2];
-          let b = +parts[parts.indexOf("N/A") + 3];
-          colorList.push({ name, code: codes[i], r, g, b, lab: rgbToLab(r, g, b) });
-        });
-      });
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+        for (let line of lines) {
+          const parts = line.split(/\s+/);
+          const code = parts[0];
+          const r = +parts[parts.length - 3];
+          const g = +parts[parts.length - 2];
+          const b = +parts[parts.length - 1];
+          const name = parts.slice(1, parts.length - 3).join(' ');
+          colorList.push({ name, code, r, g, b, lab: rgbToLab(r, g, b) });
+        }
+    });
+
 
     function adjustColor(color, delta) {
       let newAmt = counts[color] + delta;
