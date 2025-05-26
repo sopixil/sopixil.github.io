@@ -142,21 +142,7 @@ select {
     <div class="swatch-container" id="swatch-row"></div>  
   </div>  
   
-  <script>
-    // Patch: load color from camera-app.html
-    if (document.referrer.includes("camera-app.html")) {
-      const hex = localStorage.getItem("pickedColor");
-      if (hex && hex.length === 6) {
-        const r = parseInt(hex.slice(0, 2), 16);
-        const g = parseInt(hex.slice(2, 4), 16);
-        const b = parseInt(hex.slice(4, 6), 16);
-        document.addEventListener("DOMContentLoaded", () => {
-          document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-          document.getElementById("match-display").textContent = "Custom Color Loaded from Camera App";
-        });
-      }
-    }
-
+  <script>  
     const colors = {  
       white:   [255, 255, 255],  
       black:   [43, 43, 43],  
@@ -197,14 +183,6 @@ select {
         <div class="button-group">${removeGroup}</div>  
       `;  
       container.appendChild(swatch);  
-    }  
-  
-    function hexToRgb(hex) {  
-      return [  
-        parseInt(hex.substring(0, 2), 16),  
-        parseInt(hex.substring(2, 4), 16),  
-        parseInt(hex.substring(4, 6), 16)  
-      ];  
     }  
   
     let colorList = [];  
@@ -248,11 +226,21 @@ select {
     }  
   
     function updateColor() {  
-      let total = BASE_WHITE;  
       let r = 255 * BASE_WHITE;  
       let g = 255 * BASE_WHITE;  
       let b = 255 * BASE_WHITE;  
   
+      // Force override from camera-app.html  
+      if (document.referrer.includes("camera-app.html")) {  
+        const picked = localStorage.getItem("pickedColor");  
+        if (picked && picked.length === 6) {  
+          r = parseInt(picked.slice(0, 2), 16);  
+          g = parseInt(picked.slice(2, 4), 16);  
+          b = parseInt(picked.slice(4, 6), 16);  
+        }  
+      }  
+  
+      let total = BASE_WHITE;  
       for (let c in counts) {  
         let amt = counts[c];  
         total += amt;  
