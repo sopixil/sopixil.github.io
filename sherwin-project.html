@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">  
+<!DOCTYPE html>
+<html lang="en">
 <head>  
   <meta charset="UTF-8" />  
   <title>Colorant Tester</title>  
@@ -10,125 +11,121 @@
   text-align: center;  
   padding: 20px;  
   font-size: calc(1em * var(--scale));  
-}  
-  
-#home-btn {  
-  position: fixed;  
-  top: 10px;  
-  left: 10px;  
-  background-color: #b8860b;  
-  color: white;  
-  padding: calc(6px * var(--scale)) calc(12px * var(--scale));  
-  border: none;  
-  border-radius: 4px;  
-  font-weight: bold;  
-  cursor: pointer;  
-  z-index: 999;  
-  font-size: calc(0.75em * var(--scale));  
-}  
-  
-#main-box {  
-  width: 200px;  
-  height: 200px;  
-  background-color: white;  
-  margin: 0 auto 20px;  
-  border: 2px solid #ccc;  
-}  
-  
-#match-display {  
-  font-weight: bold;  
-  margin: 10px 0;  
-}  
-  
-#controls {  
-  display: flex;  
-  justify-content: center;  
-  align-items: center;  
-  gap: calc(10px * var(--scale));  
-  margin-bottom: calc(20px * var(--scale));  
-}  
-  
-#total-display {  
-  font-weight: bold;  
-  margin-bottom: calc(10px * var(--scale));  
-}  
-  
-.swatch-wrapper {  
-  display: flex;  
-  justify-content: center;  
-  margin: 0 auto;  
-}  
-  
-.swatch-container {  
-  display: grid;  
-  grid-template-columns: repeat(10, auto);  
-  gap: calc(10px * var(--scale));  
-}  
-  
-.swatch {  
-  display: flex;  
-  flex-direction: column;  
-  align-items: center;  
-  width: calc(70px * var(--scale));  
-  padding: calc(6px * var(--scale));  
-  background: #f4f4f4;  
-  border-radius: 6px;  
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);  
-}  
-  
-.swatch-name {  
-  font-size: calc(12px * var(--scale));  
-  margin-bottom: 4px;  
-  text-transform: capitalize;  
-  font-weight: bold;  
-}  
-  
-.swatch-color {  
-  width: calc(40px * var(--scale));  
-  height: calc(60px * var(--scale));  
-  border: 1px solid #000;  
-  margin: calc(4px * var(--scale)) 0;  
-}  
-  
-.count {  
-  font-size: calc(11px * var(--scale));  
-  margin: calc(2px * var(--scale)) 0;  
-}  
-  
-.button-group {  
-  display: flex;  
-  flex-wrap: wrap;  
-  justify-content: center;  
-  gap: calc(2px * var(--scale));  
-}  
-  
-button {  
-  font-size: calc(9px * var(--scale));  
-  padding: calc(3px * var(--scale));  
-  min-width: calc(28px * var(--scale));  
-  cursor: pointer;  
-}  
-  
-select {  
-  font-size: calc(12px * var(--scale));  
-  padding: calc(3px * var(--scale));  
-}  
-  
-@media (max-width: 48em), (pointer: coarse) {  
-  .swatch-container {  
-    grid-template-columns: repeat(5, auto);  
-  }  
-}  
-  
-  </style>  
+}  #home-btn {
+position: fixed;
+top: 10px;
+left: 10px;
+background-color: #b8860b;
+color: white;
+padding: calc(6px * var(--scale)) calc(12px * var(--scale));
+border: none;
+border-radius: 4px;
+font-weight: bold;
+cursor: pointer;
+z-index: 999;
+font-size: calc(0.75em * var(--scale));
+}
+
+#main-box {
+width: 200px;
+height: 200px;
+background-color: white;
+margin: 0 auto 20px;
+border: 2px solid #ccc;
+}
+
+#match-display {
+font-weight: bold;
+margin: 10px 0;
+}
+
+#controls {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: calc(10px * var(--scale));
+margin-bottom: calc(20px * var(--scale));
+}
+
+#total-display {
+font-weight: bold;
+margin-bottom: calc(10px * var(--scale));
+}
+
+.swatch-wrapper {
+display: flex;
+justify-content: center;
+margin: 0 auto;
+}
+
+.swatch-container {
+display: grid;
+grid-template-columns: repeat(10, auto);
+gap: calc(10px * var(--scale));
+}
+
+.swatch {
+display: flex;
+flex-direction: column;
+align-items: center;
+width: calc(70px * var(--scale));
+padding: calc(6px * var(--scale));
+background: #f4f4f4;
+border-radius: 6px;
+box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+
+.swatch-name {
+font-size: calc(12px * var(--scale));
+margin-bottom: 4px;
+text-transform: capitalize;
+font-weight: bold;
+}
+
+.swatch-color {
+width: calc(40px * var(--scale));
+height: calc(60px * var(--scale));
+border: 1px solid #000;
+margin: calc(4px * var(--scale)) 0;
+}
+
+.count {
+font-size: calc(11px * var(--scale));
+margin: calc(2px * var(--scale)) 0;
+}
+
+.button-group {
+display: flex;
+flex-wrap: wrap;
+justify-content: center;
+gap: calc(2px * var(--scale));
+}
+
+button {
+font-size: calc(9px * var(--scale));
+padding: calc(3px * var(--scale));
+min-width: calc(28px * var(--scale));
+cursor: pointer;
+}
+
+select {
+font-size: calc(12px * var(--scale));
+padding: calc(3px * var(--scale));
+}
+
+@media (max-width: 48em), (pointer: coarse) {
+.swatch-container {
+grid-template-columns: repeat(5, auto);
+}
+}
+</style>
+
 </head>  
 <body>  
   <button id="home-btn" onclick="window.location.href='/'">Go Back Home</button>  
   <div id="main-box"></div>  
   <div id="total-display">Total Added: 0.000 oz / 12 oz</div>  
-  <div id="match-display">Closest Sherwin Color: (loading...)</div>  
-  
-  <div id="controls">  
+  <div id="match-display">Closest Sherwin Color: SW7757 High Reflective White 256-C1</div>    <div id="controls">  
     <button id="reset-btn" onclick="resetColors()">Reset</button>  
     <label for="base-select">Base:</label>  
     <select id="base-select" onchange="changeBaseWhite()">  
@@ -136,13 +133,9 @@ select {
       <option value="4">Deep</option>  
       <option value="10" selected>Extra White</option>  
     </select>  
-  </div>  
-  
-  <div class="swatch-wrapper">  
+  </div>    <div class="swatch-wrapper">  
     <div class="swatch-container" id="swatch-row"></div>  
-  </div>  
-  
-  <script>  
+  </div>    <script>  
     const colors = {  
       white:   [255, 255, 255],  
       black:   [43, 43, 43],  
@@ -155,19 +148,19 @@ select {
       umber:   [99, 81, 71],  
       gold:    [184, 134, 11]  
     };  
-  
+
     const FRACTIONS = [  
       { label: "1oz", value: 1 },  
       { label: "1/32", value: 1/32 },  
       { label: "1/64", value: 1/64 },  
       { label: "1/128", value: 1/128 }  
     ];  
-  
+
     let BASE_WHITE = 10;  
     const MAX_TOTAL = 12;  
     let counts = {};  
     for (let c in colors) counts[c] = 0;  
-  
+
     const container = document.getElementById("swatch-row");  
     for (let name in colors) {  
       const rgb = `rgb(${colors[name][0]}, ${colors[name][1]}, ${colors[name][2]})`;  
@@ -184,7 +177,15 @@ select {
       `;  
       container.appendChild(swatch);  
     }  
-  
+
+    function hexToRgb(hex) {  
+      return [  
+        parseInt(hex.substring(0, 2), 16),  
+        parseInt(hex.substring(2, 4), 16),  
+        parseInt(hex.substring(4, 6), 16)  
+      ];  
+    }  
+
     let colorList = [];  
     fetch('allsherwincolours.txt')  
       .then(r => r.text())  
@@ -201,7 +202,7 @@ select {
           colorList.push({ name, code, r, g, b });  
         });  
       });  
-  
+
     function adjustColor(color, delta) {  
       let newAmt = counts[color] + delta;  
       if (newAmt < 0) return;  
@@ -211,7 +212,7 @@ select {
       document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);  
       updateColor();  
     }  
-  
+
     function resetColors() {  
       for (let color in counts) {  
         counts[color] = 0;  
@@ -219,28 +220,18 @@ select {
       }  
       updateColor();  
     }  
-  
+
     function changeBaseWhite() {  
       BASE_WHITE = parseFloat(document.getElementById("base-select").value);  
       updateColor();  
     }  
-  
+
     function updateColor() {  
+      let total = BASE_WHITE;  
       let r = 255 * BASE_WHITE;  
       let g = 255 * BASE_WHITE;  
       let b = 255 * BASE_WHITE;  
-  
-      // Force override from camera-app.html  
-      if (document.referrer.includes("camera-app.html")) {  
-        const picked = localStorage.getItem("pickedColor");  
-        if (picked && picked.length === 6) {  
-          r = parseInt(picked.slice(0, 2), 16);  
-          g = parseInt(picked.slice(2, 4), 16);  
-          b = parseInt(picked.slice(4, 6), 16);  
-        }  
-      }  
-  
-      let total = BASE_WHITE;  
+
       for (let c in counts) {  
         let amt = counts[c];  
         total += amt;  
@@ -248,15 +239,15 @@ select {
         g += colors[c][1] * amt;  
         b += colors[c][2] * amt;  
       }  
-  
+
       r = Math.round(r / total);  
       g = Math.round(g / total);  
       b = Math.round(b / total);  
-  
+
       document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;  
       let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);  
       document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;  
-  
+
       let closest = null, minDist = Infinity;  
       colorList.forEach(c => {  
         let d = Math.sqrt(  
@@ -273,8 +264,7 @@ select {
         document.getElementById("match-display").textContent = `Closest Sherwin Color: ${closest.code} ${closest.name}`;  
       }  
     }  
-  
+
     updateColor();  
-  </script>  
-</body>  
+  </script>  </body>  
 </html>
