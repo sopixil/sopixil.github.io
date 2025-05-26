@@ -1,164 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Center Spot Color</title>
+  <meta charset="UTF-8">
+  <title>Camera Color Picker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 20px;
-    }
-
-    #container {
-      position: relative;
-      display: none;
-    }
-
-    #preview {
-      max-width: 100%;
-      display: block;
-    }
-
-    #overlayCircle {
-      position: absolute;
-      border: 2px solid red;
-      border-radius: 50%;
-      pointer-events: none;
-      width: 40px;
-      height: 40px;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      display: none;
-    }
-
-    #cameraInput {
-      display: none;
-    }
-
-    #customButton {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 50px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    #customButton:hover {
-      background-color: #0056b3;
-    }
-
-    #colorBox, #hexCode, #editButton {
-      display: none;
-    }
-
-    #colorBox {
-      width: 100px;
-      height: 100px;
-      margin: 10px auto;
-      border: 1px solid #ccc;
-    }
-
-    #editButton {
-      background-color: #b8860b;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 50px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    #editButton:hover {
-      background-color: #a07608;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f0f0; }
+    #cameraButton { padding: 15px 30px; font-size: 16px; background: #007bff; color: #fff; border: none; border-radius: 30px; cursor: pointer; }
+    #canvas, #swatch, #hexDisplay, #colorName, #editButton { display: none; margin-top: 20px; }
+    #swatch { width: 100px; height: 100px; margin: 0 auto; border-radius: 8px; border: 1px solid #ccc; }
+    #editButton { background: #b8860b; color: white; padding: 10px 20px; border: none; border-radius: 30px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <label for="cameraInput" id="customButton">Take Photo</label>
-  <input type="file" accept="image/*" capture="environment" id="cameraInput"><br><br>
-
-  <div id="container">
-    <img id="preview">
-    <div id="overlayCircle"></div>
-  </div><br>
-
-  <div id="colorBox"></div>
-  <p id="hexCode"></p>
+  <button id="cameraButton">Take Photo</button>
+  <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display: none;">
+  <canvas id="canvas"></canvas>
+  <div id="swatch"></div>
+  <div id="hexDisplay"></div>
+  <div id="colorName"></div>
   <button id="editButton">Edit Colour</button>
 
-  <canvas id="canvas" style="display:none;"></canvas>
-
   <script>
-    const input = document.getElementById('cameraInput');
-    const preview = document.getElementById('preview');
-    const canvas = document.getElementById('canvas');
-    const colorBox = document.getElementById('colorBox');
-    const hexCode = document.getElementById('hexCode');
-    const overlayCircle = document.getElementById('overlayCircle');
-    const container = document.getElementById('container');
-    const editButton = document.getElementById('editButton');
+    const cameraButton = document.getElementById("cameraButton");
+    const cameraInput = document.getElementById("cameraInput");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const swatch = document.getElementById("swatch");
+    const hexDisplay = document.getElementById("hexDisplay");
+    const colorName = document.getElementById("colorName");
+    const editButton = document.getElementById("editButton");
+    let sherwinColors = [];
 
-    input.addEventListener('change', () => {
-      const file = input.files[0];
+    cameraButton.onclick = () => cameraInput.click();
+
+    cameraInput.onchange = e => {
+      const file = e.target.files[0];
       if (!file) return;
-
-      const img = new Image();
-      img.onload = () => {
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        const centerX = Math.floor(img.width / 2);
-        const centerY = Math.floor(img.height / 2);
-        const radius = 20;
-
-        let r = 0, g = 0, b = 0, count = 0;
-        const data = ctx.getImageData(centerX - radius, centerY - radius, radius * 2, radius * 2);
-        for (let y = 0; y < radius * 2; y++) {
-          for (let x = 0; x < radius * 2; x++) {
-            const dx = x - radius;
-            const dy = y - radius;
-            if (dx * dx + dy * dy <= radius * radius) {
-              const index = (y * radius * 2 + x) * 4;
-              r += data.data[index];
-              g += data.data[index + 1];
-              b += data.data[index + 2];
-              count++;
-            }
-          }
-        }
-
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-
-        const hex = "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-
-        preview.src = img.src;
-        overlayCircle.style.display = 'block';
-        container.style.display = 'inline-block';
-        colorBox.style.backgroundColor = hex;
-        colorBox.style.display = 'block';
-        hexCode.textContent = `Center Spot Color: ${hex}`;
-        hexCode.style.display = 'block';
-        editButton.style.display = 'inline-block';
-
-        // Save to localStorage
-        localStorage.setItem('pickedColor', hex);
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          updateColor();
+        };
+        img.src = ev.target.result;
       };
+      reader.readAsDataURL(file);
+    };
 
-      img.src = URL.createObjectURL(file);
-    });
+    function updateColor() {
+      const x = canvas.width / 2;
+      const y = canvas.height / 2;
+      const size = 10;
+      const data = ctx.getImageData(x - size, y - size, size * 2, size * 2).data;
+      let [r, g, b] = [0, 0, 0], count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+      }
+      r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+      const hex = "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
+      swatch.style.background = hex;
+      swatch.style.display = hexDisplay.style.display = canvas.style.display = editButton.style.display = "block";
+      hexDisplay.textContent = hex;
+      localStorage.setItem("pickedColor", hex);
+      if (sherwinColors.length) {
+        const match = findClosestSherwinColor(sherwinColors, r, g, b);
+        colorName.textContent = `${match.code} ${match.name}`;
+        colorName.style.display = "block";
+      }
+    }
 
-    editButton.addEventListener('click', () => {
-      window.location.href = 'sherwin-project.html';
-    });
+    editButton.onclick = () => location.href = "sherwin-project.html";
+
+    function rgbToLab(r, g, b) {
+      const [rr, gg, bb] = [r, g, b].map(v => {
+        v /= 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      let x = (rr * 0.4124 + gg * 0.3576 + bb * 0.1805) / 0.95047;
+      let y = (rr * 0.2126 + gg * 0.7152 + bb * 0.0722) / 1.0000;
+      let z = (rr * 0.0193 + gg * 0.1192 + bb * 0.9505) / 1.08883;
+      const fx = x > 0.008856 ? Math.cbrt(x) : (7.787 * x) + 16 / 116;
+      const fy = y > 0.008856 ? Math.cbrt(y) : (7.787 * y) + 16 / 116;
+      const fz = z > 0.008856 ? Math.cbrt(z) : (7.787 * z) + 16 / 116;
+      return { L: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
+    }
+
+    function ciede2000(lab1, lab2) {
+      const deg2rad = d => d * (Math.PI / 180);
+      const rad2deg = r => r * (180 / Math.PI);
+      const {L: L1, a: a1, b: b1} = lab1;
+      const {L: L2, a: a2, b: b2} = lab2;
+      const avgL = (L1 + L2) / 2;
+      const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), avgC = (C1 + C2) / 2;
+      const G = 0.5 * (1 - Math.sqrt(Math.pow(avgC,7)/(Math.pow(avgC,7)+Math.pow(25,7))));
+      const a1p = a1 * (1 + G), a2p = a2 * (1 + G);
+      const C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+      const h1p = Math.atan2(b1, a1p), h2p = Math.atan2(b2, a2p);
+      const deltahp = Math.abs(h2p - h1p) > Math.PI ? h2p - h1p + (h2p <= h1p ? 2 * Math.PI : -2 * Math.PI) : h2p - h1p;
+      const deltaHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(deltahp / 2);
+      const deltaLp = L2 - L1;
+      const deltaCp = C2p - C1p;
+      const avgCp = (C1p + C2p) / 2;
+      const avghp = Math.abs(h1p - h2p) > Math.PI ? (h1p + h2p + 2 * Math.PI) / 2 : (h1p + h2p) / 2;
+      const T = 1 - 0.17 * Math.cos(avghp - deg2rad(30)) + 0.24 * Math.cos(2 * avghp) + 0.32 * Math.cos(3 * avghp + deg2rad(6)) - 0.20 * Math.cos(4 * avghp - deg2rad(63));
+      const SL = 1 + ((0.015 * Math.pow(avgL - 50, 2)) / Math.sqrt(20 + Math.pow(avgL - 50, 2)));
+      const SC = 1 + 0.045 * avgCp;
+      const SH = 1 + 0.015 * avgCp * T;
+      const deltaRo = deg2rad(30) * Math.exp(-Math.pow((rad2deg(avghp) - 275) / 25, 2));
+      const RC = 2 * Math.sqrt(Math.pow(avgCp,7)/(Math.pow(avgCp,7)+Math.pow(25,7)));
+      const RT = -RC * Math.sin(2 * deltaRo);
+      return Math.sqrt(Math.pow(deltaLp/SL,2) + Math.pow(deltaCp/SC,2) + Math.pow(deltaHp/SH,2) + RT*(deltaCp/SC)*(deltaHp/SH));
+    }
+
+    function findClosestSherwinColor(list, r, g, b) {
+      const lab1 = rgbToLab(r, g, b);
+      let min = Infinity, match = null;
+      list.forEach(c => {
+        const dist = ciede2000(lab1, rgbToLab(c.r, c.g, c.b));
+        if (dist < min) { min = dist; match = c; }
+      });
+      return match;
+    }
+
+    function loadSherwinColors(text) {
+      return text.trim().split("\n").map(line => {
+        const parts = line.split(" ");
+        const code = parts[0];
+        const r = +parts[parts.length - 4];
+        const g = +parts[parts.length - 3];
+        const b = +parts[parts.length - 2];
+        const name = parts.slice(1, -4).join(" ");
+        return { code, name, r, g, b };
+      });
+    }
+
+    fetch("allsherwincolours.txt")
+      .then(res => res.text())
+      .then(text => { sherwinColors = loadSherwinColors(text); });
   </script>
 </body>
 </html>
