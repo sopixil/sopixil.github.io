@@ -158,8 +158,7 @@ grid-template-columns: repeat(5, auto);
 
     let BASE_WHITE = 10;  
     const MAX_TOTAL = 12;  
-    let counts = {};  
-    for (let c in colors) counts[c] = 0;  
+    let counts = Object.fromEntries(Object.keys(colors).map(c => [c, 0]));
 
     const container = document.getElementById("swatch-row");  
     for (let name in colors) {  
@@ -176,14 +175,6 @@ grid-template-columns: repeat(5, auto);
         <div class="button-group">${removeGroup}</div>  
       `;  
       container.appendChild(swatch);  
-    }  
-
-    function hexToRgb(hex) {  
-      return [  
-        parseInt(hex.substring(0, 2), 16),  
-        parseInt(hex.substring(2, 4), 16),  
-        parseInt(hex.substring(4, 6), 16)  
-      ];  
     }  
 
     let colorList = [];  
@@ -203,11 +194,31 @@ grid-template-columns: repeat(5, auto);
         });  
       });  
 
+    function calculateFinalColor(baseWhite, counts) {  
+      let total = baseWhite;  
+      let r = 255 * baseWhite, g = 255 * baseWhite, b = 255 * baseWhite;  
+      for (let c in counts) {  
+        const amt = counts[c];  
+        const [cr, cg, cb] = colors[c];  
+        total += amt;  
+        r += cr * amt;  
+        g += cg * amt;  
+        b += cb * amt;  
+      }  
+      return {  
+        r: Math.round(r / total),  
+        g: Math.round(g / total),  
+        b: Math.round(b / total)  
+      };  
+    }  
+
     function adjustColor(color, delta) {  
       let newAmt = counts[color] + delta;  
       if (newAmt < 0) return;  
-      let total = Object.values(counts).reduce((a, b) => a + b, 0);  
-      if (delta > 0 && total + delta > MAX_TOTAL) return;  
+      if (delta > 0) {  
+        let total = Object.values(counts).reduce((a, b) => a + b, 0);  
+        if (total + delta > MAX_TOTAL) return;  
+      }  
       counts[color] = newAmt;  
       document.getElementById(`count-${color}`).textContent = newAmt.toFixed(3);  
       updateColor();  
@@ -227,25 +238,9 @@ grid-template-columns: repeat(5, auto);
     }  
 
     function updateColor() {  
-      let total = BASE_WHITE;  
-      let r = 255 * BASE_WHITE;  
-      let g = 255 * BASE_WHITE;  
-      let b = 255 * BASE_WHITE;  
-
-      for (let c in counts) {  
-        let amt = counts[c];  
-        total += amt;  
-        r += colors[c][0] * amt;  
-        g += colors[c][1] * amt;  
-        b += colors[c][2] * amt;  
-      }  
-
-      r = Math.round(r / total);  
-      g = Math.round(g / total);  
-      b = Math.round(b / total);  
-
+      const { r, g, b } = calculateFinalColor(BASE_WHITE, counts);  
       document.getElementById("main-box").style.backgroundColor = `rgb(${r}, ${g}, ${b})`;  
-      let totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);  
+      const totalAdded = Object.values(counts).reduce((a, b) => a + b, 0);  
       document.getElementById("total-display").textContent = `Total Added: ${totalAdded.toFixed(3)} oz / 12 oz`;  
 
       let closest = null, minDist = Infinity;  
