@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GridVector - Infinite Design Canvas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,9 +14,13 @@
             user-select: none;
             -webkit-user-select: none;
             overflow: hidden;
+            position: fixed; /* Prevents bounce scroll layouts on iOS */
+            width: 100%;
+            height: 100%;
         }
         canvas {
             display: block;
+            touch-action: none; /* Prevents default browser panning interference */
         }
         /* Custom scrollbars for menus */
         ::-webkit-scrollbar {
@@ -33,9 +37,9 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(148, 163, 184, 0.5);
         }
-        /* Soft transition for collapsible sidebar */
-        .sidebar-transition {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        /* Smooth sliding transitions */
+        .panel-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin 0.3s ease;
         }
     </style>
 </head>
@@ -70,179 +74,168 @@
         </div>
     </header>
 
-    <!-- LEFT TOOLBAR / CONTROL PANEL -->
-    <div class="absolute left-4 top-24 bottom-20 z-20 flex items-start gap-2 pointer-events-none">
-        <!-- Sidebar Content Box -->
-        <aside id="leftSidebar" class="sidebar-transition w-64 flex flex-col gap-3 pointer-events-auto h-full max-h-[calc(100vh-12rem)] overflow-y-auto">
-            
-            <!-- TOOL MODES -->
-            <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3.5 rounded-2xl shadow-2xl flex flex-col gap-2">
-                <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1">Select Tool</span>
-                
-                <button id="tool-draw" onclick="setTool('draw')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
-                        <span>Draw Segment</span>
-                    </div>
-                    <kbd class="text-[9px] bg-indigo-700 px-1 py-0.5 rounded opacity-80">D</kbd>
-                </button>
-
-                <button id="tool-pan" onclick="setTool('pan')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/85 hover:text-white">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="move" class="w-3.5 h-3.5"></i>
-                        <span>Pan Infinite Canvas</span>
-                    </div>
-                    <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-80">P</kbd>
-                </button>
-
-                <button id="tool-erase" onclick="setTool('erase')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/85 hover:text-white">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-                        <span>Erase Line</span>
-                    </div>
-                    <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-80">E</kbd>
-                </button>
-
-                <button id="tool-snip" onclick="setTool('snip')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all text-rose-300 hover:bg-rose-950/30 hover:text-rose-200">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="crop" class="w-3.5 h-3.5"></i>
-                        <span class="font-semibold">Snipping Tool</span>
-                    </div>
-                    <kbd class="text-[9px] bg-rose-950/50 text-rose-300 border border-rose-800/50 px-1.5 py-0.5 rounded opacity-80">S</kbd>
-                </button>
-            </div>
-
-            <!-- STYLE CONTROLS -->
-            <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3.5 rounded-2xl shadow-2xl flex flex-col gap-3">
-                <!-- ACTIVE COLOR -->
-                <div>
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1.5">Stroke Color</span>
-                    <div class="grid grid-cols-5 gap-1.5" id="colorPalette">
-                        <!-- Javascript will populate custom high-contrast design colors -->
-                    </div>
-                    <!-- Custom Color Picker Trigger -->
-                    <div class="mt-2.5 flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
-                        <div class="relative w-7 h-7 rounded-lg overflow-hidden border border-slate-700 cursor-pointer shrink-0">
-                            <input type="color" id="customColorInput" value="#06b6d4" class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent">
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-[9px] text-slate-400 uppercase font-bold">Custom Line Color</span>
-                            <span id="customColorHex" class="text-xs font-mono text-slate-300">#06b6d4</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STROKE WIDTH -->
-                <div class="pt-2 border-t border-slate-850">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Stroke Width</span>
-                        <span id="strokeWeightVal" class="text-xs font-semibold text-slate-300">3px</span>
-                    </div>
-                    <input type="range" id="strokeWeight" min="1" max="12" value="3" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                </div>
-
-                <!-- CANVAS THEMES -->
-                <div class="pt-2 border-t border-slate-850">
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1.5">Canvas Theme</span>
-                    <select id="canvasTheme" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <option value="midnight">Midnight (Dark Blue)</option>
-                        <option value="blueprint">Blueprint Grid</option>
-                        <option value="charcoal">Charcoal (Pure Dark)</option>
-                        <option value="light">Drafting White (Light)</option>
-                        <option value="custom">Custom Theme...</option>
-                    </select>
-
-                    <!-- Hidden Theme Customizer Area -->
-                    <div id="customThemePanel" class="hidden mt-2 p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
-                        <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase block">Theme Creator</span>
-                        
-                        <!-- Background Color -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-slate-300">Background</span>
-                            <div class="flex items-center gap-1.5">
-                                <input type="color" id="customThemeBg" value="#111827" class="w-6 h-6 border border-slate-750 rounded cursor-pointer bg-transparent">
-                                <span id="customThemeBgHex" class="font-mono text-[10px] text-slate-400">#111827</span>
-                            </div>
-                        </div>
-
-                        <!-- Grid Dots Color -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-slate-300">Grid Dots</span>
-                            <div class="flex items-center gap-1.5">
-                                <input type="color" id="customThemeDot" value="#374151" class="w-6 h-6 border border-slate-750 rounded cursor-pointer bg-transparent">
-                                <span id="customThemeDotHex" class="font-mono text-[10px] text-slate-400">#374151</span>
-                            </div>
-                        </div>
-
-                        <!-- Grid Lines Color -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-slate-300">Grid Lines</span>
-                            <div class="flex items-center gap-1.5">
-                                <input type="color" id="customThemeGridLine" value="#1f2937" class="w-6 h-6 border border-slate-750 rounded cursor-pointer bg-transparent">
-                                <span id="customThemeGridLineHex" class="font-mono text-[10px] text-slate-400">#1f2937</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GRID SETTINGS -->
-                <div class="pt-2 border-t border-slate-850 flex flex-col gap-2">
-                    <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-                        <span>Show Grid Points</span>
-                        <input type="checkbox" id="toggleGridPoints" checked class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
-                    </label>
-                    <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-                        <span>Show Grid Lines</span>
-                        <input type="checkbox" id="toggleGridLines" class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
-                    </label>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Left Collapse Toggle Button -->
-        <button id="toggleLeftSidebar" onclick="toggleLeftPanel()" class="pointer-events-auto bg-slate-950/90 border border-slate-800 hover:bg-slate-900 p-2.5 rounded-2xl text-slate-300 hover:text-white shadow-2xl transition-all self-start mt-2 flex items-center justify-center" title="Collapse Control Panel">
-            <i id="leftCollapseIcon" data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-    </div>
-
-    <!-- RIGHT ACTION FLOATERS (UNDO / REDO / RECENTER / ZOOM CONTROLS) -->
-    <div class="absolute right-4 top-24 z-20 flex items-start gap-2 pointer-events-none">
-        <!-- Right Collapse Toggle Button -->
-        <button id="toggleRightSidebar" onclick="toggleRightPanel()" class="pointer-events-auto bg-slate-950/90 border border-slate-800 hover:bg-slate-900 p-2.5 rounded-2xl text-slate-300 hover:text-white shadow-2xl transition-all self-start flex items-center justify-center" title="Collapse Workspace Tools">
-            <i id="rightCollapseIcon" data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-
-        <aside id="rightSidebar" class="sidebar-transition flex flex-col gap-3 pointer-events-auto">
-            <!-- Navigation Actions -->
-            <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-2 rounded-2xl shadow-xl flex flex-col gap-1.5">
-                <button onclick="undo()" title="Undo (Ctrl+Z)" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors flex justify-center">
-                    <i data-lucide="undo" class="w-4 h-4"></i>
-                </button>
-                <button onclick="redo()" title="Redo (Ctrl+Y)" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors flex justify-center">
-                    <i data-lucide="redo" class="w-4 h-4"></i>
-                </button>
-                <button onclick="clearCanvas()" title="Clear Canvas" class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 rounded-xl transition-colors flex justify-center mt-1 border-t border-slate-800">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <!-- View Settings -->
-            <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-2 rounded-2xl shadow-xl flex flex-col gap-1.5">
-                <button onclick="zoomIn()" title="Zoom In" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors flex justify-center">
-                    <i data-lucide="zoom-in" class="w-4 h-4"></i>
-                </button>
-                <button onclick="zoomOut()" title="Zoom Out" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors flex justify-center">
-                    <i data-lucide="zoom-out" class="w-4 h-4"></i>
-                </button>
-                <button onclick="recenter()" title="Reset Pan & Zoom" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors flex justify-center">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <button onclick="showHelp()" class="bg-slate-950/90 hover:bg-indigo-900 border border-indigo-950 p-2.5 rounded-xl shadow-xl flex items-center justify-center text-indigo-400 hover:text-white transition-all">
-                <i data-lucide="help-circle" class="w-4.5 h-4.5"></i>
+    <!-- UNIFIED LEFT SIDEBAR STACK -->
+    <div class="absolute left-4 top-24 bottom-16 z-20 w-72 flex flex-col gap-4 pointer-events-none select-none">
+        
+        <!-- SECTION 1: TOOLBOX -->
+        <div class="flex flex-col gap-2 pointer-events-auto">
+            <!-- Toolbox Toggle Button -->
+            <button id="toggleToolboxBtn" onclick="toggleToolbox()" class="flex items-center gap-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-500/30 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white shadow-xl transition-all w-fit">
+                <i id="toolboxToggleIcon" data-lucide="folder-open" class="w-4 h-4 text-indigo-200"></i>
+                <span id="toolboxToggleText">Hide Toolbox</span>
             </button>
-        </aside>
+
+            <!-- Toolbox Content Container -->
+            <div id="toolboxContainer" class="panel-transition flex flex-col gap-2.5 max-h-[38vh] overflow-y-auto pr-1">
+                
+                <!-- TOOL MODES -->
+                <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase mb-0.5">Select Tool</span>
+                    
+                    <button id="tool-draw" onclick="setTool('draw')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                            <span>Draw Segment</span>
+                        </div>
+                        <kbd class="text-[9px] bg-indigo-700 px-1 py-0.5 rounded opacity-85">D</kbd>
+                    </button>
+
+                    <button id="tool-pan" onclick="setTool('pan')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="move" class="w-3.5 h-3.5"></i>
+                            <span>Pan Canvas</span>
+                        </div>
+                        <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-85">P</kbd>
+                    </button>
+
+                    <button id="tool-erase" onclick="setTool('erase')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                            <span>Erase Line</span>
+                        </div>
+                        <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-85">E</kbd>
+                    </button>
+
+                    <button id="tool-snip" onclick="setTool('snip')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-rose-300 hover:bg-rose-950/30 hover:text-rose-200">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="crop" class="w-3.5 h-3.5"></i>
+                            <span class="font-semibold">Snipping Tool</span>
+                        </div>
+                        <kbd class="text-[9px] bg-rose-950/50 text-rose-300 border border-rose-800/30 px-1 py-0.5 rounded opacity-85">S</kbd>
+                    </button>
+                </div>
+
+                <!-- STYLE & PALETTE CONTROLS -->
+                <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-2.5">
+                    <!-- Color Presets -->
+                    <div>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Stroke Color</span>
+                        <div class="grid grid-cols-5 gap-1.5" id="colorPalette">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <!-- Custom Color Picker -->
+                        <div class="mt-2 flex items-center gap-2 bg-slate-900/60 border border-slate-800/80 p-1.5 rounded-lg">
+                            <div class="relative w-6 h-6 rounded overflow-hidden border border-slate-700 cursor-pointer shrink-0">
+                                <input type="color" id="customColorInput" value="#06b6d4" class="absolute inset-0 w-full h-full scale-150 cursor-pointer p-0 border-0 bg-transparent">
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[8px] text-slate-400 uppercase font-bold">Custom Hex</span>
+                                <span id="customColorHex" class="text-[10px] font-mono text-slate-300">#06B6D4</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stroke weight -->
+                    <div class="pt-2 border-t border-slate-800/50">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Stroke Width</span>
+                            <span id="strokeWeightVal" class="text-xs font-semibold text-slate-300">3px</span>
+                        </div>
+                        <input type="range" id="strokeWeight" min="1" max="12" value="3" class="w-full h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <!-- Canvas Themes Select -->
+                    <div class="pt-2 border-t border-slate-800/50">
+                        <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Canvas Theme</span>
+                        <select id="canvasTheme" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="midnight">Midnight (Dark Blue)</option>
+                            <option value="blueprint">Blueprint Grid</option>
+                            <option value="charcoal">Charcoal (Pure Dark)</option>
+                            <option value="light">Drafting White (Light)</option>
+                            <option value="custom">Custom Theme...</option>
+                        </select>
+
+                        <!-- Theme customizer creator -->
+                        <div id="customThemePanel" class="hidden mt-2 p-2 bg-slate-900 border border-slate-805 rounded-lg space-y-1.5">
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="text-slate-400">Canvas BG</span>
+                                <input type="color" id="customThemeBg" value="#111827" class="w-5 h-5 border border-slate-700 rounded cursor-pointer bg-transparent">
+                            </div>
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="text-slate-400">Grid Dots</span>
+                                <input type="color" id="customThemeDot" value="#374151" class="w-5 h-5 border border-slate-700 rounded cursor-pointer bg-transparent">
+                            </div>
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="text-slate-400">Grid Lines</span>
+                                <input type="color" id="customThemeGridLine" value="#1f2937" class="w-5 h-5 border border-slate-700 rounded cursor-pointer bg-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grid Visibility Settings -->
+                    <div class="pt-2 border-t border-slate-800/50 flex flex-col gap-1.5">
+                        <label class="flex items-center justify-between text-[10px] text-slate-300 cursor-pointer">
+                            <span>Show Grid Points</span>
+                            <input type="checkbox" id="toggleGridPoints" checked class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
+                        </label>
+                        <label class="flex items-center justify-between text-[10px] text-slate-300 cursor-pointer">
+                            <span>Show Grid Lines</span>
+                            <input type="checkbox" id="toggleGridLines" class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: WORKSPACE ACTIONS -->
+        <div class="flex flex-col gap-2 pointer-events-auto mt-2">
+            <!-- Actions Toggle Button -->
+            <button id="toggleActionsBtn" onclick="toggleActions()" class="flex items-center gap-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white shadow-xl transition-all w-fit">
+                <i id="actionsToggleIcon" data-lucide="settings" class="w-4 h-4 text-emerald-400"></i>
+                <span id="actionsToggleText">Hide Actions</span>
+            </button>
+
+            <!-- Actions Content Container -->
+            <div id="actionsContainer" class="panel-transition flex items-center gap-2 max-w-xs pr-1">
+                <!-- Navigation Actions Bar -->
+                <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-2 rounded-xl shadow-xl flex items-center gap-1">
+                    <button onclick="undo()" title="Undo (Ctrl+Z)" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                        <i data-lucide="undo" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="redo()" title="Redo (Ctrl+Y)" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                        <i data-lucide="redo" class="w-4 h-4"></i>
+                    </button>
+                    <div class="w-px h-5 bg-slate-800 mx-1"></div>
+                    <button onclick="zoomIn()" title="Zoom In" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="zoomOut()" title="Zoom Out" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="recenter()" title="Reset Pan & Zoom" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                    <div class="w-px h-5 bg-slate-800 mx-1"></div>
+                    <button onclick="showHelp()" title="Help Instructions" class="p-2 text-indigo-400 hover:text-white hover:bg-indigo-950/40 rounded-lg transition-all">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="clearCanvas()" title="Clear Workspace" class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- MAIN INTERACTIVE CANVAS -->
@@ -278,7 +271,7 @@
             <span class="text-slate-600">|</span>
             <span><strong>Scroll/Zoom:</strong> Mouse Wheel</span>
         </div>
-        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.3 // Canvas</span>
+        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.6 // Canvas</span>
     </footer>
 
     <!-- INTERACTIVE HELP DIALOG MODAL -->
@@ -382,31 +375,11 @@
 
         // Canvas themes definitions
         const THEMES = {
-            midnight: {
-                bg: '#0f172a',
-                grid: '#1e293b',
-                dot: '#334155'
-            },
-            blueprint: {
-                bg: '#1e3a8a',
-                grid: '#1d4ed8',
-                dot: '#3b82f6'
-            },
-            charcoal: {
-                bg: '#0b0f19',
-                grid: '#161e2e',
-                dot: '#243242'
-            },
-            light: {
-                bg: '#fafafa',
-                grid: '#e5e5e5',
-                dot: '#a3a3a3'
-            },
-            custom: {
-                bg: '#111827',
-                grid: '#1f2937',
-                dot: '#374151'
-            }
+            midnight: { bg: '#0f172a', grid: '#1e293b', dot: '#334155' },
+            blueprint: { bg: '#1e3a8a', grid: '#1d4ed8', dot: '#3b82f6' },
+            charcoal: { bg: '#0b0f19', grid: '#161e2e', dot: '#243242' },
+            light: { bg: '#fafafa', grid: '#e5e5e5', dot: '#a3a3a3' },
+            custom: { bg: '#111827', grid: '#1f2937', dot: '#374151' }
         };
 
         // App State
@@ -414,7 +387,7 @@
             lines: [],
             selectedColor: '#06b6d4',
             strokeWeight: 3,
-            tool: 'draw', // 'draw', 'pan', 'erase', 'snip'
+            tool: 'draw', 
             theme: 'midnight',
             gridPointsVisible: true,
             gridLinesVisible: false,
@@ -423,31 +396,26 @@
                 y: window.innerHeight / 2,
                 zoom: 1
             },
-            // Collapsible state trackers
-            leftPanelCollapsed: false,
-            rightPanelCollapsed: false,
-            // Drawing Action State
+            // Start collapsed by default as requested
+            leftPanelCollapsed: true,
+            rightPanelCollapsed: true,
             isDrawing: false,
-            drawStart: null, // snapped world point {x, y}
-            drawEnd: null,   // snapped world point {x, y}
-            // Panning Action State
+            drawStart: null, 
+            drawEnd: null,   
             isPanning: false,
             panStart: { x: 0, y: 0 },
-            // Eraser Action State
             isErasing: false,
-            // Snipping Tool State
             isSnipping: false,
-            snipStart: null,  // screen coordinates {x, y}
-            snipEnd: null,    // screen coordinates {x, y}
-            pendingSnipBox: null // calculated world bounding box for capture
+            snipStart: null,  
+            snipEnd: null,    
+            pendingSnipBox: null 
         };
 
         // History Undo/Redo Stacks
         let history = [[]];
         let historyIndex = 0;
 
-        // Configuration
-        const GRID_SIZE = 40; // Base distance in world coordinate units between grid points
+        const GRID_SIZE = 40; 
 
         // Setup DOM Elements
         const canvas = document.getElementById('vectorCanvas');
@@ -461,29 +429,47 @@
         let initialPinchDistance = null;
         let initialZoom = 1;
         let initialTransformCenter = { x: 0, y: 0 };
+        let mouseScreenPos = null;
 
-        // Initialize Canvas
         function init() {
             lucide.createIcons();
             resizeCanvas();
             setupColorPalette();
             setupCustomPickers();
             saveHistory();
-            recenter();
+            
+            // Initial center alignment
+            state.transform.x = canvas.width / 2;
+            state.transform.y = canvas.height / 2;
+            
             addEventListeners();
+
+            // Set default collapsed visual states cleanly
+            toggleToolbox(true);
+            toggleActions(true);
+
             animate();
         }
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            updateZoomDisplay();
         }
 
-        // Setup custom visual color picker palette
+        function getCanvasCoordinates(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * window.devicePixelRatio,
+                y: (clientY - rect.top) * window.devicePixelRatio
+            };
+        }
+
         function setupColorPalette() {
             const container = document.getElementById('colorPalette');
             container.innerHTML = '';
-            DESIGN_COLORS.forEach((c, idx) => {
+            DESIGN_COLORS.forEach((c) => {
                 const button = document.createElement('button');
                 button.className = `w-7 h-7 rounded-full transition-all duration-150 transform hover:scale-110 flex items-center justify-center focus:outline-none ring-offset-2 ring-offset-slate-950 ${state.selectedColor === c.code ? 'ring-2 ring-indigo-500 scale-105' : 'ring-0'}`;
                 button.style.backgroundColor = c.code;
@@ -495,10 +481,8 @@
             });
         }
 
-        // Handle line color change across palette presets or custom color
         function selectLineColor(color, skipInputUpdate = false) {
             state.selectedColor = color;
-            // Update active ring highlighting
             document.querySelectorAll('#colorPalette button').forEach(b => {
                 const btnBg = rgbToHex(b.style.backgroundColor);
                 if (btnBg === color.toLowerCase()) {
@@ -514,7 +498,6 @@
             }
         }
 
-        // Helper to convert rgb string from background-color to hexadecimal
         function rgbToHex(rgbStr) {
             if (!rgbStr.startsWith('rgb')) return rgbStr;
             const rgb = rgbStr.match(/\d+/g);
@@ -522,9 +505,7 @@
             return "#" + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
         }
 
-        // Setup dynamic custom theme and custom color pickers
         function setupCustomPickers() {
-            // Line color picker
             const picker = document.getElementById('customColorInput');
             picker.addEventListener('input', (e) => {
                 const val = e.target.value;
@@ -532,7 +513,6 @@
                 selectLineColor(val, true);
             });
 
-            // Theme customizer pickers
             const bgPicker = document.getElementById('customThemeBg');
             const dotPicker = document.getElementById('customThemeDot');
             const gridPicker = document.getElementById('customThemeGridLine');
@@ -553,44 +533,69 @@
             });
         }
 
-        // Collapsible UI Panel triggers
-        function toggleLeftPanel() {
-            state.leftPanelCollapsed = !state.leftPanelCollapsed;
-            const sidebar = document.getElementById('leftSidebar');
-            const icon = document.getElementById('leftCollapseIcon');
-            
+        // Toggle Toolbox Menu
+        function toggleToolbox(forceState = null) {
+            state.leftPanelCollapsed = forceState !== null ? forceState : !state.leftPanelCollapsed;
+            const container = document.getElementById('toolboxContainer');
+            const icon = document.getElementById('toolboxToggleIcon');
+            const text = document.getElementById('toolboxToggleText');
+            const btn = document.getElementById('toggleToolboxBtn');
+
             if (state.leftPanelCollapsed) {
-                sidebar.classList.add('-translate-x-72', 'opacity-0');
-                sidebar.classList.remove('w-64');
-                sidebar.style.pointerEvents = 'none';
-                icon.setAttribute('data-lucide', 'chevron-right');
+                container.classList.add('-translate-x-80', 'opacity-0');
+                container.style.pointerEvents = 'none';
+                container.style.height = '0';
+                icon.setAttribute('data-lucide', 'folder');
+                text.innerText = '📂 Show Toolbox';
+                btn.className = "flex items-center gap-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-500/35 px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-xl transition-all w-fit";
             } else {
-                sidebar.classList.remove('-translate-x-72', 'opacity-0');
-                sidebar.classList.add('w-64');
-                sidebar.style.pointerEvents = 'auto';
-                icon.setAttribute('data-lucide', 'chevron-left');
+                container.classList.remove('-translate-x-80', 'opacity-0');
+                container.style.pointerEvents = 'auto';
+                container.style.height = 'auto';
+                icon.setAttribute('data-lucide', 'folder-open');
+                text.innerText = 'Close Toolbox';
+                btn.className = "flex items-center gap-2 bg-slate-950/90 hover:bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all w-fit";
             }
             lucide.createIcons();
         }
 
-        function toggleRightPanel() {
-            state.rightPanelCollapsed = !state.rightPanelCollapsed;
-            const sidebar = document.getElementById('rightSidebar');
-            const icon = document.getElementById('rightCollapseIcon');
+        // Toggle Actions Menu
+        function toggleActions(forceState = null) {
+            state.rightPanelCollapsed = forceState !== null ? forceState : !state.rightPanelCollapsed;
+            const container = document.getElementById('actionsContainer');
+            const icon = document.getElementById('actionsToggleIcon');
+            const text = document.getElementById('actionsToggleText');
+            const btn = document.getElementById('toggleActionsBtn');
 
             if (state.rightPanelCollapsed) {
-                sidebar.classList.add('translate-x-24', 'opacity-0');
-                sidebar.style.pointerEvents = 'none';
-                icon.setAttribute('data-lucide', 'chevron-left');
+                container.classList.add('-translate-x-80', 'opacity-0');
+                container.style.pointerEvents = 'none';
+                container.style.height = '0';
+                icon.setAttribute('data-lucide', 'settings');
+                text.innerText = '⚙️ Show Actions';
+                btn.className = "flex items-center gap-2 bg-slate-950 border border-slate-800 hover:bg-slate-900 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white shadow-xl transition-all w-fit";
             } else {
-                sidebar.classList.remove('translate-x-24', 'opacity-0');
-                sidebar.style.pointerEvents = 'auto';
-                icon.setAttribute('data-lucide', 'chevron-right');
+                container.classList.remove('-translate-x-80', 'opacity-0');
+                container.style.pointerEvents = 'auto';
+                container.style.height = 'auto';
+                icon.setAttribute('data-lucide', 'chevron-left');
+                text.innerText = 'Close Actions';
+                btn.className = "flex items-center gap-2 bg-slate-950/90 hover:bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-xs font-bold text-slate-305 hover:text-white transition-all w-fit";
             }
             lucide.createIcons();
         }
 
-        // --- COORDINATE MATH & WORLD MATRIX TRANSLATION ---
+        // Collapse all to side trays immediately
+        function collapseAllPanelsAutomatically() {
+            if (!state.leftPanelCollapsed) {
+                toggleToolbox(true);
+            }
+            if (!state.rightPanelCollapsed) {
+                toggleActions(true);
+            }
+        }
+
+        // --- COORDINATE MATH & WORLD MATRIX ---
 
         function screenToWorld(sx, sy) {
             return {
@@ -606,7 +611,6 @@
             };
         }
 
-        // Snap screen coordinates to the closest infinite world grid point
         function getNearestGridPoint(screenX, screenY) {
             const world = screenToWorld(screenX, screenY);
             const gx = Math.round(world.x / GRID_SIZE) * GRID_SIZE;
@@ -614,34 +618,27 @@
             return { x: gx, y: gy };
         }
 
-        // Snaps screen coordinates perfectly to Horizontal, Vertical, or 45-degree Diagonal relative to start point
         function snapToValidDirections(startPoint, targetCandidate) {
             const sx = startPoint.x;
             const sy = startPoint.y;
             const tx = targetCandidate.x;
             const ty = targetCandidate.y;
-
             const G = GRID_SIZE;
 
-            // Target Candidate 1: Perfect Horizontal Snap
             const c1 = { x: tx, y: sy };
             const d1 = Math.hypot(tx - c1.x, ty - c1.y);
 
-            // Target Candidate 2: Perfect Vertical Snap
             const c2 = { x: sx, y: ty };
             const d2 = Math.hypot(tx - c2.x, ty - c2.y);
 
-            // Target Candidate 3: Perfect Diagonal \ Snap (slope = 1)
             const k1 = Math.round(((tx - sx) + (ty - sy)) / (2 * G));
             const c3 = { x: sx + k1 * G, y: sy + k1 * G };
             const d3 = Math.hypot(tx - c3.x, ty - c3.y);
 
-            // Target Candidate 4: Perfect Diagonal / Snap (slope = -1)
             const k2 = Math.round(((tx - sx) - (ty - sy)) / (2 * G));
             const c4 = { x: sx + k2 * G, y: sy - k2 * G };
             const d4 = Math.hypot(tx - c4.x, ty - c4.y);
 
-            // Evaluate closest projection distance
             let bestMatch = c1;
             let minDist = d1;
 
@@ -657,7 +654,6 @@
         function drawGrid(renderCtx, rWidth, rHeight, rTransform, rTheme) {
             const t = THEMES[rTheme];
             
-            // Viewport boundaries in world space coordinates
             const minWorld = {
                 x: (0 - rTransform.x) / rTransform.zoom,
                 y: (0 - rTransform.y) / rTransform.zoom
@@ -667,37 +663,30 @@
                 y: (rHeight - rTransform.y) / rTransform.zoom
             };
 
-            // Calculate grid index bounds
             const iMin = Math.floor(minWorld.x / GRID_SIZE);
             const iMax = Math.ceil(maxWorld.x / GRID_SIZE);
             const jMin = Math.floor(minWorld.y / GRID_SIZE);
             const jMax = Math.ceil(maxWorld.y / GRID_SIZE);
 
-            // Optimization check: If zoom is extremely micro, adjust opacity to prevent busy overlapping
             const visualSpace = GRID_SIZE * rTransform.zoom;
             let opacityFactor = 1.0;
-            if (visualSpace < 12) {
-                // Too dense, do not draw grid
-                return;
-            } else if (visualSpace < 22) {
+            if (visualSpace < 12) return;
+            if (visualSpace < 22) {
                 opacityFactor = (visualSpace - 12) / 10;
             }
 
-            // Draw full grid line paths if requested
             if (state.gridLinesVisible) {
                 renderCtx.beginPath();
                 renderCtx.strokeStyle = t.grid;
-                renderCtx.lineWidth = 0.5 * Math.min(1.5, rTransform.zoom);
+                renderCtx.lineWidth = 0.5 * Math.min(1.5, rTransform.zoom) * window.devicePixelRatio;
                 renderCtx.globalAlpha = opacityFactor * 0.4;
 
-                // Vertical Grid lines
                 for (let i = iMin; i <= iMax; i++) {
                     const wx = i * GRID_SIZE;
                     const sx = wx * rTransform.zoom + rTransform.x;
                     renderCtx.moveTo(sx, 0);
                     renderCtx.lineTo(sx, rHeight);
                 }
-                // Horizontal Grid lines
                 for (let j = jMin; j <= jMax; j++) {
                     const wy = j * GRID_SIZE;
                     const sy = wy * rTransform.zoom + rTransform.y;
@@ -708,11 +697,10 @@
                 renderCtx.globalAlpha = 1.0;
             }
 
-            // Draw clean point dots if requested
             if (state.gridPointsVisible) {
                 renderCtx.fillStyle = t.dot;
                 renderCtx.globalAlpha = opacityFactor;
-                const dotRadius = visualSpace < 40 ? 1 : 1.5;
+                const dotRadius = (visualSpace < 40 ? 1 : 1.5) * window.devicePixelRatio;
 
                 for (let i = iMin; i <= iMax; i++) {
                     const wx = i * GRID_SIZE;
@@ -734,7 +722,7 @@
             state.lines.forEach(line => {
                 renderCtx.beginPath();
                 renderCtx.strokeStyle = line.color;
-                renderCtx.lineWidth = line.weight * rTransform.zoom;
+                renderCtx.lineWidth = line.weight * rTransform.zoom * window.devicePixelRatio;
                 renderCtx.lineCap = 'round';
                 renderCtx.lineJoin = 'round';
 
@@ -754,132 +742,108 @@
         }
 
         function drawInteractiveOverlays() {
-            // Hover/Snapping Anchor Ring representation under current mouse location
             if (mouseScreenPos && !state.isPanning && state.tool !== 'snip') {
                 const snapped = getNearestGridPoint(mouseScreenPos.x, mouseScreenPos.y);
                 const screenPt = worldToScreen(snapped.x, snapped.y);
 
                 ctx.beginPath();
-                ctx.arc(screenPt.x, screenPt.y, 6 * Math.max(0.6, Math.min(1.5, state.transform.zoom)), 0, Math.PI * 2);
+                ctx.arc(screenPt.x, screenPt.y, 6 * Math.max(0.6, Math.min(1.5, state.transform.zoom)) * window.devicePixelRatio, 0, Math.PI * 2);
                 ctx.strokeStyle = state.tool === 'erase' ? '#ef4444' : state.selectedColor;
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.5 * window.devicePixelRatio;
                 ctx.stroke();
 
-                // Small crosshair indicator inside
                 ctx.fillStyle = state.tool === 'erase' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(99, 102, 241, 0.4)';
                 ctx.beginPath();
-                ctx.arc(screenPt.x, screenPt.y, 2, 0, Math.PI * 2);
+                ctx.arc(screenPt.x, screenPt.y, 2 * window.devicePixelRatio, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Interactive Line Draw Preview
             if (state.isDrawing && state.drawStart && state.drawEnd) {
                 const sStart = worldToScreen(state.drawStart.x, state.drawStart.y);
                 const sEnd = worldToScreen(state.drawEnd.x, state.drawEnd.y);
 
-                // Dashed preview path
                 ctx.beginPath();
-                ctx.setLineDash([5, 5]);
+                ctx.setLineDash([5 * window.devicePixelRatio, 5 * window.devicePixelRatio]);
                 ctx.strokeStyle = state.selectedColor;
-                ctx.lineWidth = state.strokeWeight * state.transform.zoom;
+                ctx.lineWidth = state.strokeWeight * state.transform.zoom * window.devicePixelRatio;
                 ctx.moveTo(sStart.x, sStart.y);
                 ctx.lineTo(sEnd.x, sEnd.y);
                 ctx.stroke();
-                ctx.setLineDash([]); // Reset dash
+                ctx.setLineDash([]); 
 
-                // Active snap point dot highlights
                 ctx.fillStyle = state.selectedColor;
                 ctx.beginPath();
-                ctx.arc(sStart.x, sStart.y, 4 * state.transform.zoom, 0, Math.PI * 2);
-                ctx.arc(sEnd.x, sEnd.y, 4 * state.transform.zoom, 0, Math.PI * 2);
+                ctx.arc(sStart.x, sStart.y, 4 * state.transform.zoom * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.arc(sEnd.x, sEnd.y, 4 * state.transform.zoom * window.devicePixelRatio, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Snipping Crop Rectangle representation
             if (state.tool === 'snip' && state.snipStart && state.snipEnd) {
                 const sx = Math.min(state.snipStart.x, state.snipEnd.x);
                 const sy = Math.min(state.snipStart.y, state.snipEnd.y);
                 const sw = Math.abs(state.snipStart.x - state.snipEnd.x);
                 const sh = Math.abs(state.snipStart.y - state.snipEnd.y);
 
-                // Outside boundary dark translucency dim mask
                 ctx.fillStyle = 'rgba(2, 6, 23, 0.65)';
-                // Top block
                 ctx.fillRect(0, 0, canvas.width, sy);
-                // Bottom block
                 ctx.fillRect(0, sy + sh, canvas.width, canvas.height - (sy + sh));
-                // Left block
                 ctx.fillRect(0, sy, sx, sh);
-                // Right block
                 ctx.fillRect(sx + sw, sy, canvas.width - (sx + sw), sh);
 
-                // Snipping Crop border
                 ctx.strokeStyle = '#f43f5e';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2 * window.devicePixelRatio;
                 ctx.strokeRect(sx, sy, sw, sh);
 
-                // Fine dash interior guidelines
                 ctx.beginPath();
-                ctx.setLineDash([3, 4]);
+                ctx.setLineDash([3 * window.devicePixelRatio, 4 * window.devicePixelRatio]);
                 ctx.strokeStyle = 'rgba(244, 63, 94, 0.3)';
                 ctx.strokeRect(sx + sw/3, sy, sw/3, sh);
                 ctx.strokeRect(sx, sy + sh/3, sw, sh/3);
                 ctx.setLineDash([]);
 
-                // Coordinates label info box on overlay
                 ctx.fillStyle = '#f43f5e';
-                ctx.font = '10px monospace';
-                ctx.fillText(`CROP REGION: ${sw}x${sh} px`, sx, sy - 8);
+                ctx.font = `${10 * window.devicePixelRatio}px monospace`;
+                ctx.fillText(`CROP REGION: ${Math.round(sw / window.devicePixelRatio)}x${Math.round(sh / window.devicePixelRatio)} px`, sx, sy - (8 * window.devicePixelRatio));
             }
         }
 
         function animate() {
-            // Background Theme Colors
             const t = THEMES[state.theme];
             ctx.fillStyle = t.bg;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Grid system
             drawGrid(ctx, canvas.width, canvas.height, state.transform, state.theme);
-
-            // Draw current vector lines
             drawLines(ctx, state.transform);
-
-            // Draw interaction overlays
             drawInteractiveOverlays();
 
-            // Request next render frame
             requestAnimationFrame(animate);
         }
 
-        // --- MOUSE & PAN & SNAP ACTIONS LOGIC ---
-
-        let mouseScreenPos = null;
+        // --- INTERACTION LOGIC ---
 
         function addEventListeners() {
-            // Handle Window Resize
             window.addEventListener('resize', resizeCanvas);
 
-            // Track Mouse screen position coordinates at any given moment
             canvas.addEventListener('mousemove', (e) => {
-                mouseScreenPos = { x: e.clientX, y: e.clientY };
+                const coords = getCanvasCoordinates(e.clientX, e.clientY);
+                mouseScreenPos = coords;
                 
-                // Update live coordinate tracker
-                const worldPt = screenToWorld(e.clientX, e.clientY);
+                const worldPt = screenToWorld(coords.x, coords.y);
                 coordDisplay.innerText = `X: ${Math.round(worldPt.x)}, Y: ${Math.round(worldPt.y)}`;
-
-                handleMouseMove(e);
+                handleMouseMove(coords.x, coords.y);
             });
 
-            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousedown', (e) => {
+                const coords = getCanvasCoordinates(e.clientX, e.clientY);
+                handleMouseDown(e.button, coords.x, coords.y);
+            });
+            
             window.addEventListener('mouseup', handleMouseUp);
             canvas.addEventListener('wheel', handleMouseWheel, { passive: false });
 
-            // Keyboard Spacebar drag trigger setup
             window.addEventListener('keydown', handleKeyDown);
             window.addEventListener('keyup', handleKeyUp);
 
-            // Dynamic Inputs linking
             document.getElementById('strokeWeight').addEventListener('input', (e) => {
                 state.strokeWeight = parseInt(e.target.value);
                 document.getElementById('strokeWeightVal').innerText = `${state.strokeWeight}px`;
@@ -903,74 +867,125 @@
                 state.gridLinesVisible = e.target.checked;
             });
 
-            // Prevent context menus on right click drag for clean experience
-            canvas.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-            });
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            // Mobile/Tablet Touch Interaction Integrations
-            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+            // Normalized touch mapping loops
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const coords = getCanvasCoordinates(touch.clientX, touch.clientY);
+                    mouseScreenPos = coords;
+                    handleMouseDown(0, coords.x, coords.y);
+                } else if (e.touches.length === 2) {
+                    state.isPanning = false;
+                    state.isDrawing = false;
+                    
+                    const p1 = getCanvasCoordinates(e.touches[0].clientX, e.touches[0].clientY);
+                    const p2 = getCanvasCoordinates(e.touches[1].clientX, e.touches[1].clientY);
+                    
+                    initialPinchDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                    initialZoom = state.transform.zoom;
+                    
+                    initialTransformCenter = {
+                        x: (p1.x + p2.x) / 2 - state.transform.x,
+                        y: (p1.y + p2.y) / 2 - state.transform.y
+                    };
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const coords = getCanvasCoordinates(touch.clientX, touch.clientY);
+                    mouseScreenPos = coords;
+
+                    const worldPt = screenToWorld(coords.x, coords.y);
+                    coordDisplay.innerText = `X: ${Math.round(worldPt.x)}, Y: ${Math.round(worldPt.y)}`;
+                    
+                    handleMouseMove(coords.x, coords.y);
+                } else if (e.touches.length === 2 && initialPinchDistance) {
+                    const p1 = getCanvasCoordinates(e.touches[0].clientX, e.touches[0].clientY);
+                    const p2 = getCanvasCoordinates(e.touches[1].clientX, e.touches[1].clientY);
+                    const distance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                    
+                    let ratio = distance / initialPinchDistance;
+                    let newZoom = Math.min(6.0, Math.max(0.15, initialZoom * ratio));
+                    
+                    const midX = (p1.x + p2.x) / 2;
+                    const midY = (p1.y + p2.y) / 2;
+                    
+                    state.transform.zoom = newZoom;
+                    state.transform.x = midX - initialTransformCenter.x * (newZoom / initialZoom);
+                    state.transform.y = midY - initialTransformCenter.y * (newZoom / initialZoom);
+                    updateZoomDisplay();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                initialPinchDistance = null;
+                handleMouseUp();
+            }, { passive: false });
         }
 
-        function handleMouseDown(e) {
-            const isRightClick = e.button === 2;
-            const isMiddleClick = e.button === 1;
+        function handleMouseDown(buttonCode, cx, cy) {
+            const isRightClick = buttonCode === 2;
+            const isMiddleClick = buttonCode === 1;
             const spacePressed = keyState[' '];
 
-            // Primary Pan trigger check (Right click, middle click, spacebar, or active Pan tool)
             if (isRightClick || isMiddleClick || spacePressed || state.tool === 'pan') {
                 state.isPanning = true;
-                state.panStart = { x: e.clientX - state.transform.x, y: e.clientY - state.transform.y };
+                state.panStart = { x: cx - state.transform.x, y: cy - state.transform.y };
                 canvas.style.cursor = 'grabbing';
+                collapseAllPanelsAutomatically();
                 return;
             }
 
-            // Normal Left Click Interaction Actions
-            if (e.button === 0) {
+            if (buttonCode === 0) {
+                // Auto-collapse panels on active workspace click/drag
+                collapseAllPanelsAutomatically();
+
                 if (state.tool === 'draw') {
                     state.isDrawing = true;
-                    // Snap start click directly to nearest grid point in world space
-                    state.drawStart = getNearestGridPoint(e.clientX, e.clientY);
+                    state.drawStart = getNearestGridPoint(cx, cy);
                     state.drawEnd = { ...state.drawStart };
                 } 
                 else if (state.tool === 'erase') {
                     state.isErasing = true;
-                    eraseLineAt(e.clientX, e.clientY);
+                    eraseLineAt(cx, cy);
                 }
                 else if (state.tool === 'snip') {
                     state.isSnipping = true;
-                    state.snipStart = { x: e.clientX, y: e.clientY };
+                    state.snipStart = { x: cx, y: cy };
                     state.snipEnd = { ...state.snipStart };
                 }
             }
         }
 
-        function handleMouseMove(e) {
+        function handleMouseMove(cx, cy) {
             if (state.isPanning) {
-                state.transform.x = e.clientX - state.panStart.x;
-                state.transform.y = e.clientY - state.panStart.y;
+                state.transform.x = cx - state.panStart.x;
+                state.transform.y = cy - state.panStart.y;
                 return;
             }
 
             if (state.isDrawing && state.drawStart) {
-                // Find nearest grid point to target coordinate
-                const rawGridTarget = getNearestGridPoint(e.clientX, e.clientY);
-                // Snap using horizontal/vertical/diagonal 45deg constraint math
+                const rawGridTarget = getNearestGridPoint(cx, cy);
                 state.drawEnd = snapToValidDirections(state.drawStart, rawGridTarget);
             }
 
             if (state.isErasing) {
-                eraseLineAt(e.clientX, e.clientY);
+                eraseLineAt(cx, cy);
             }
 
             if (state.isSnipping && state.snipStart) {
-                state.snipEnd = { x: e.clientX, y: e.clientY };
+                state.snipEnd = { x: cx, y: cy };
             }
         }
 
-        function handleMouseUp(e) {
+        function handleMouseUp() {
             if (state.isPanning) {
                 state.isPanning = false;
                 canvas.style.cursor = state.tool === 'draw' ? 'crosshair' : (state.tool === 'pan' ? 'grab' : 'default');
@@ -979,7 +994,6 @@
 
             if (state.isDrawing) {
                 state.isDrawing = false;
-                // Add the line if it has valid geometric length
                 if (state.drawStart && state.drawEnd && (state.drawStart.x !== state.drawEnd.x || state.drawStart.y !== state.drawEnd.y)) {
                     state.lines.push({
                         x1: state.drawStart.x,
@@ -996,151 +1010,52 @@
                 state.drawEnd = null;
             }
 
-            if (state.isErasing) {
-                state.isErasing = false;
-            }
+            if (state.isErasing) state.isErasing = false;
 
             if (state.isSnipping && state.snipStart && state.snipEnd) {
                 state.isSnipping = false;
                 
-                // Formulate cropped coordinates box
                 const sx = Math.min(state.snipStart.x, state.snipEnd.x);
                 const sy = Math.min(state.snipStart.y, state.snipEnd.y);
                 const sw = Math.abs(state.snipStart.x - state.snipEnd.x);
                 const sh = Math.abs(state.snipStart.y - state.snipEnd.y);
 
-                if (sw > 10 && sh > 10) {
+                if (sw > 15 && sh > 15) {
                     state.pendingSnipBox = { x: sx, y: sy, width: sw, height: sh };
                     openCaptureModal();
                 } else {
-                    showToast('Crop region too small! Drag a larger rectangle.', 'alert');
+                    showToast('Crop region too small!', 'alert');
                 }
-                
-                // Clear state snip targets
                 state.snipStart = null;
                 state.snipEnd = null;
             }
         }
 
-        // --- TOUCH COMPATIBILITY FOR MOBILE LAYOUTS ---
-
-        function handleTouchStart(e) {
-            // Avoid scroll bouncy drag
-            e.preventDefault();
-
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                if (state.tool === 'draw') {
-                    state.isDrawing = true;
-                    state.drawStart = getNearestGridPoint(touch.clientX, touch.clientY);
-                    state.drawEnd = { ...state.drawStart };
-                } else if (state.tool === 'pan') {
-                    state.isPanning = true;
-                    state.panStart = { x: touch.clientX - state.transform.x, y: touch.clientY - state.transform.y };
-                } else if (state.tool === 'erase') {
-                    state.isErasing = true;
-                    eraseLineAt(touch.clientX, touch.clientY);
-                } else if (state.tool === 'snip') {
-                    state.isSnipping = true;
-                    state.snipStart = { x: touch.clientX, y: touch.clientY };
-                    state.snipEnd = { ...state.snipStart };
-                }
-            } else if (e.touches.length === 2) {
-                // Dual Finger Pinch & Zoom Interaction
-                state.isPanning = false;
-                state.isDrawing = false;
-                
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                initialPinchDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-                initialZoom = state.transform.zoom;
-                
-                initialTransformCenter = {
-                    x: (t1.clientX + t2.clientX) / 2 - state.transform.x,
-                    y: (t1.clientY + t2.clientY) / 2 - state.transform.y
-                };
-            }
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                mouseScreenPos = { x: touch.clientX, y: touch.clientY };
-
-                if (state.isPanning) {
-                    state.transform.x = touch.clientX - state.panStart.x;
-                    state.transform.y = touch.clientY - state.panStart.y;
-                } else if (state.isDrawing && state.drawStart) {
-                    const rawGridTarget = getNearestGridPoint(touch.clientX, touch.clientY);
-                    state.drawEnd = snapToValidDirections(state.drawStart, rawGridTarget);
-                } else if (state.isErasing) {
-                    eraseLineAt(touch.clientX, touch.clientY);
-                } else if (state.isSnipping && state.snipStart) {
-                    state.snipEnd = { x: touch.clientX, y: touch.clientY };
-                }
-            } else if (e.touches.length === 2 && initialPinchDistance) {
-                // Perform dynamic zoom centered on middle finger pinch axis
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                const distance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-                
-                let ratio = distance / initialPinchDistance;
-                let newZoom = Math.min(6.0, Math.max(0.15, initialZoom * ratio));
-                
-                const midX = (t1.clientX + t2.clientX) / 2;
-                const midY = (t1.clientY + t2.clientY) / 2;
-                
-                // Adjust translation offset to scale gracefully
-                state.transform.zoom = newZoom;
-                state.transform.x = midX - initialTransformCenter.x * (newZoom / initialZoom);
-                state.transform.y = midY - initialTransformCenter.y * (newZoom / initialZoom);
-                updateZoomDisplay();
-            }
-        }
-
-        function handleTouchEnd(e) {
-            e.preventDefault();
-            initialPinchDistance = null;
-            handleMouseUp(null);
-        }
-
-        // Smart zoom on wheel centered on cursor coordinates
         function handleMouseWheel(e) {
             e.preventDefault();
-            
             const zoomFactor = 1.12;
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
+            const coords = getCanvasCoordinates(e.clientX, e.clientY);
 
-            // Convert current screen cursor coordinates to world
-            const worldX = (mouseX - state.transform.x) / state.transform.zoom;
-            const worldY = (mouseY - state.transform.y) / state.transform.zoom;
+            const worldX = (coords.x - state.transform.x) / state.transform.zoom;
+            const worldY = (coords.y - state.transform.y) / state.transform.zoom;
 
             if (e.deltaY < 0) {
-                // Zoom In
                 state.transform.zoom = Math.min(6.0, state.transform.zoom * zoomFactor);
             } else {
-                // Zoom Out
                 state.transform.zoom = Math.max(0.15, state.transform.zoom / zoomFactor);
             }
 
-            // Adjust transformation matrix center relative to cursor location
-            state.transform.x = mouseX - worldX * state.transform.zoom;
-            state.transform.y = mouseY - worldY * state.transform.zoom;
-
+            state.transform.x = coords.x - worldX * state.transform.zoom;
+            state.transform.y = coords.y - worldY * state.transform.zoom;
             updateZoomDisplay();
         }
 
         // --- ERASER RAYCAST LOGIC ---
 
-        function eraseLineAt(screenX, screenY) {
-            const worldLoc = screenToWorld(screenX, screenY);
+        function eraseLineAt(cx, cy) {
+            const worldLoc = screenToWorld(cx, cy);
             let deletedAny = false;
-
-            // Distance threshold: responsive click region in screen pixels relative to zoom scaling
-            const threshold = 12 / state.transform.zoom;
+            const threshold = (16 * window.devicePixelRatio) / state.transform.zoom;
 
             state.lines = state.lines.filter(line => {
                 const dist = getDistanceToSegmentSq(worldLoc, {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2});
@@ -1155,7 +1070,6 @@
             }
         }
 
-        // Math geometry for point to line-segment squared distance
         function getDistanceToSegmentSq(p, p1, p2) {
             let x = p1.x;
             let y = p1.y;
@@ -1172,13 +1086,12 @@
                     y += dy * t;
                 }
             }
-
             dx = p.x - x;
             dy = p.y - y;
             return dx * dx + dy * dy;
         }
 
-        // --- SNIPPING GRAPHIC CAPTURE ENGINE ---
+        // --- SNIPPING EXPORT ENGINE ---
 
         function openCaptureModal() {
             document.getElementById('captureModal').classList.remove('hidden');
@@ -1189,31 +1102,28 @@
             state.pendingSnipBox = null;
         }
 
-        // Render target crop area to separate offscreen high-res canvas and download
         function performCapture(mode) {
             if (!state.pendingSnipBox) return;
 
             const box = state.pendingSnipBox;
             const tempCanvas = document.createElement('canvas');
             
-            // Render exact screen dimensions of crop selection box
             tempCanvas.width = box.width;
             tempCanvas.height = box.height;
             const tempCtx = tempCanvas.getContext('2d');
 
-            // Apply target theme aesthetics
             let bgStyle = THEMES[state.theme].bg;
             let gridVisible = state.gridPointsVisible;
             let linesVisible = state.gridLinesVisible;
             let targetTheme = state.theme;
 
             if (mode === 'clean') {
-                bgStyle = '#0b0f19'; // Clean charcoal look
+                bgStyle = '#0b0f19'; 
                 gridVisible = false;
                 linesVisible = false;
                 targetTheme = 'charcoal';
             } else if (mode === 'light') {
-                bgStyle = '#fafafa'; // Clean drafting look
+                bgStyle = '#fafafa'; 
                 gridVisible = false;
                 linesVisible = false;
                 targetTheme = 'light';
@@ -1223,27 +1133,20 @@
                 linesVisible = false;
             }
 
-            // Draw Background style
             if (bgStyle !== 'transparent') {
                 tempCtx.fillStyle = bgStyle;
                 tempCtx.fillRect(0, 0, box.width, box.height);
-            } else {
-                tempCtx.clearRect(0, 0, box.width, box.height);
             }
 
-            // Shift transformation mapping to offset captured rectangle at absolute (0,0)
             const modifiedTransform = {
                 x: state.transform.x - box.x,
                 y: state.transform.y - box.y,
                 zoom: state.transform.zoom
             };
 
-            // Draw grid if active in mode
             if (gridVisible || linesVisible) {
-                // Temporarily alter state values for grid function
                 const oldPointsVal = state.gridPointsVisible;
                 const oldLinesVal = state.gridLinesVisible;
-                
                 state.gridPointsVisible = gridVisible;
                 state.gridLinesVisible = linesVisible;
 
@@ -1253,11 +1156,8 @@
                 state.gridLinesVisible = oldLinesVal;
             }
 
-            // Draw artwork lines inside the cropped scope
             const originalLines = JSON.parse(JSON.stringify(state.lines));
-            
             if (mode === 'light') {
-                // Darken white lines on bright background paper so they are visible
                 state.lines.forEach(line => {
                     if (line.color.toLowerCase() === '#f8fafc' || line.color.toLowerCase() === 'white' || line.color.toLowerCase() === '#ffffff') {
                         line.color = '#020617';
@@ -1266,11 +1166,8 @@
             }
 
             drawLines(tempCtx, modifiedTransform);
-            
-            // Restore line configurations
             state.lines = originalLines;
 
-            // Trigger browser crop download file
             try {
                 const dataUrl = tempCanvas.toDataURL('image/png');
                 const link = document.createElement('a');
@@ -1279,26 +1176,29 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
-                showToast('Screenshot downloaded successfully!', 'success');
+                showToast('Export downloaded successfully!', 'success');
             } catch (err) {
-                showToast('Failed to save screenshot due to canvas security settings.', 'alert');
+                showToast('Failed to save export image.', 'alert');
             }
 
             closeCaptureModal();
-            // Revert tool back to draw mode automatically
             setTool('draw');
         }
 
-        // --- HISTORY STACK CONTROLS ---
+        // --- HISTORY CONTROLS ---
 
         function saveHistory() {
-            // Drop forward redo stack on new action
             if (historyIndex < history.length - 1) {
                 history = history.slice(0, historyIndex + 1);
             }
             history.push(JSON.parse(JSON.stringify(state.lines)));
             historyIndex = history.length - 1;
+        }
+
+        // Action helper function to allow panel auto-collapse on trigger click
+        function triggerAction(actionFn) {
+            actionFn();
+            collapseAllPanelsAutomatically();
         }
 
         function undo() {
@@ -1352,38 +1252,29 @@
 
         function recenter() {
             state.transform = {
-                x: window.innerWidth / 2,
-                y: window.innerHeight / 2,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
                 zoom: 1
             };
             updateZoomDisplay();
             showToast('Viewport reset to center', 'info');
         }
 
-        // --- KEYBOARD LISTENERS & TOOL UPDATES ---
+        // --- KEYBOARD CONTROLS ---
 
         const keyState = {};
 
         function handleKeyDown(e) {
             keyState[e.key] = true;
-
-            // Spacebar Panning toggle indicator check
             if (e.key === ' ') {
                 canvas.style.cursor = 'grab';
+                collapseAllPanelsAutomatically();
             }
 
-            // Control Hotkeys
             if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'z') {
-                    e.preventDefault();
-                    undo();
-                }
-                if (e.key === 'y') {
-                    e.preventDefault();
-                    redo();
-                }
+                if (e.key === 'z') { e.preventDefault(); undo(); }
+                if (e.key === 'y') { e.preventDefault(); redo(); }
             } else {
-                // Individual tool shortcuts
                 const toolKey = e.key.toLowerCase();
                 if (toolKey === 'd') setTool('draw');
                 if (toolKey === 'p') setTool('pan');
@@ -1401,37 +1292,23 @@
 
         function setTool(toolName) {
             state.tool = toolName;
-            
-            // Adjust visual classes in DOM sidebar buttons
             const tools = ['draw', 'pan', 'erase', 'snip'];
             tools.forEach(t => {
                 const btn = document.getElementById(`tool-${t}`);
                 if (t === toolName) {
-                    if (t === 'snip') {
-                        btn.className = "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all bg-rose-600 text-white hover:bg-rose-500 shadow-md shadow-rose-600/20";
-                    } else {
-                        btn.className = "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20";
-                    }
+                    btn.className = `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all ${t === 'snip' ? 'bg-rose-600' : 'bg-indigo-600'} text-white shadow-md`;
                 } else {
-                    if (t === 'snip') {
-                        btn.className = "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all text-rose-300 hover:bg-rose-950/20 hover:text-rose-200";
-                    } else {
-                        btn.className = "w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/85 hover:text-white";
-                    }
+                    btn.className = `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all ${t === 'snip' ? 'text-rose-300 hover:bg-rose-950/20' : 'text-slate-300 hover:bg-slate-800/85'}`;
                 }
             });
 
-            // Handle special display for Snipping mode
             if (toolName === 'snip') {
                 snipControls.classList.remove('hidden');
-                canvas.style.cursor = 'crosshair';
             } else {
                 snipControls.classList.add('hidden');
-                canvas.style.cursor = toolName === 'draw' ? 'crosshair' : (toolName === 'pan' ? 'grab' : 'default');
             }
+            canvas.style.cursor = toolName === 'draw' ? 'crosshair' : (toolName === 'pan' ? 'grab' : 'default');
         }
-
-        // --- SUB-UI HUD UPDATES ---
 
         function updateZoomDisplay() {
             zoomDisplay.innerText = `${Math.round(state.transform.zoom * 100)}%`;
@@ -1441,16 +1318,9 @@
             lineCountDisplay.innerText = `${state.lines.length} Line${state.lines.length === 1 ? '' : 's'}`;
         }
 
-        // Help Modal Controls
-        function showHelp() {
-            document.getElementById('helpModal').classList.remove('hidden');
-        }
+        function showHelp() { document.getElementById('helpModal').classList.remove('hidden'); }
+        function closeHelp() { document.getElementById('helpModal').classList.add('hidden'); }
 
-        function closeHelp() {
-            document.getElementById('helpModal').classList.add('hidden');
-        }
-
-        // Custom notification system
         let toastTimeout = null;
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
@@ -1458,8 +1328,6 @@
             const toastIcon = document.getElementById('toastIcon');
 
             toastMsg.innerText = message;
-
-            // Style variations
             if (type === 'success') {
                 toast.className = "absolute bottom-6 right-6 z-40 transform translate-y-0 opacity-100 transition-all duration-300 bg-emerald-950 border border-emerald-800 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3";
                 toastIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>`;
@@ -1472,7 +1340,6 @@
             }
 
             lucide.createIcons();
-
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-12');
@@ -1480,7 +1347,6 @@
             }, 3000);
         }
 
-        // Boot application on load
         window.onload = init;
     </script>
 </body>
