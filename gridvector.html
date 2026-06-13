@@ -217,20 +217,20 @@
             <div id="actionsContainer" class="panel-transition flex items-center gap-2 max-w-xs pr-1">
                 <!-- Navigation Actions Bar -->
                 <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-2 rounded-xl shadow-xl flex items-center gap-1">
-                    <button onclick="undo()" title="Undo (Ctrl+Z)" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onclick="undo()" title="Undo (Ctrl+Z)" class="p-2 text-slate-355 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <i data-lucide="undo" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="redo()" title="Redo (Ctrl+Y)" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onclick="redo()" title="Redo (Ctrl+Y)" class="p-2 text-slate-355 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <i data-lucide="redo" class="w-4 h-4"></i>
                     </button>
                     <div class="w-px h-5 bg-slate-800 mx-1"></div>
-                    <button onclick="zoomIn()" title="Zoom In" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onclick="zoomIn()" title="Zoom In" class="p-2 text-slate-355 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <i data-lucide="zoom-in" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="zoomOut()" title="Zoom Out" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onclick="zoomOut()" title="Zoom Out" class="p-2 text-slate-355 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <i data-lucide="zoom-out" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="recenter()" title="Reset Pan & Zoom" class="p-2 text-slate-350 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onclick="recenter()" title="Reset Pan & Zoom" class="p-2 text-slate-355 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
                     <div class="w-px h-5 bg-slate-800 mx-1"></div>
@@ -737,7 +737,6 @@
                 renderCtx.beginPath();
                 renderCtx.fillStyle = fill.color;
                 
-                // Helper mapping closure for coordinates matching device scaling parameters
                 const getScreenPt = (pt) => ({
                     x: pt.x * rTransform.zoom + rTransform.x,
                     y: pt.y * rTransform.zoom + rTransform.y
@@ -1103,8 +1102,8 @@
             const d1 = Math.hypot(p.x - p1.x, p.y - p1.y);
             const d2 = Math.hypot(p.x - p2.x, p.y - p2.y);
             const dLen = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-            // Grid-spacing tolerance bounds
-            return Math.abs(d1 + d2 - dLen) < 0.2;
+            // Increased epsilon tolerance slightly to ensure solid numerical snapping
+            return Math.abs(d1 + d2 - dLen) < 0.5;
         }
 
         function getIntersection(p1, p2, p3, p4) {
@@ -1114,7 +1113,8 @@
             const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / det;
             const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / det;
             
-            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+            const eps = 1e-5;
+            if (t >= -eps && t <= 1 + eps && u >= -eps && u <= 1 + eps) {
                 return {
                     x: p1.x + t * (p2.x - p1.x),
                     y: p1.y + t * (p2.y - p1.y)
@@ -1153,7 +1153,7 @@
             for (let step = 0; step < 200; step++) {
                 const vId = current.to;
                 const edgesFromV = adj[vId];
-                if (edgesFromV.length === 0) return null;
+                if (!edgesFromV || edgesFromV.length === 0) return null;
 
                 // Incoming directional index search
                 let incomingIndex = -1;
@@ -1166,7 +1166,7 @@
 
                 if (incomingIndex === -1) return null;
 
-                // Grab CCW next neighbor from sorted outgoing adjacencies
+                // CCW rotation adjacency traversal
                 const nextIdx = (incomingIndex + 1) % edgesFromV.length;
                 const nextEdge = edgesFromV[nextIdx];
 
@@ -1175,7 +1175,7 @@
                     return path; // Complete bounding circuit found
                 }
                 if (visited.has(edgeKey)) {
-                    return null; // Self-intersecting cycle
+                    return null; // Degenerate loop
                 }
                 visited.add(edgeKey);
                 path.push(nextEdge);
@@ -1201,12 +1201,13 @@
                 return newV;
             }
 
+            // Gather endpoints of all segments
             state.lines.forEach(line => {
                 addVertex(line.x1, line.y1);
                 addVertex(line.x2, line.y2);
             });
 
-            // Step 2: Extract segment intersections
+            // Extract segment intersections and split vertices
             for (let i = 0; i < state.lines.length; i++) {
                 for (let j = i + 1; j < state.lines.length; j++) {
                     const l1 = state.lines[i];
@@ -1221,17 +1222,21 @@
                 }
             }
 
-            const adj = Array.from({ length: vertices.length }, () => []);
-            const directedEdges = [];
+            // Create a strict set of deduplicated undirected edges
+            const uniqueUndirectedEdges = new Set();
+            const undirectedEdges = [];
 
-            function addDirectedEdge(fromV, toV) {
-                const angle = Math.atan2(toV.y - fromV.y, toV.x - fromV.x);
-                const edge = { from: fromV.id, to: toV.id, angle };
-                adj[fromV.id].push(edge);
-                directedEdges.push(edge);
+            function addUndirectedEdge(v1, v2) {
+                const minId = Math.min(v1.id, v2.id);
+                const maxId = Math.max(v1.id, v2.id);
+                const key = `${minId},${maxId}`;
+                if (!uniqueUndirectedEdges.has(key)) {
+                    uniqueUndirectedEdges.add(key);
+                    undirectedEdges.push({ from: minId, to: maxId });
+                }
             }
 
-            // Step 3: Split drawn line edges along intersection points
+            // Map split segment junctions along original lines
             state.lines.forEach(line => {
                 const p1 = { x: line.x1, y: line.y1 };
                 const p2 = { x: line.x2, y: line.y2 };
@@ -1251,83 +1256,118 @@
                 });
                 
                 for (let k = 0; k < segmentVertices.length - 1; k++) {
-                    const v1 = segmentVertices[k];
-                    const v2 = segmentVertices[k+1];
-                    addDirectedEdge(v1, v2);
-                    addDirectedEdge(v2, v1);
+                    addUndirectedEdge(segmentVertices[k], segmentVertices[k+1]);
                 }
             });
 
-            // Sort adjacency edges counter-clockwise at each node
+            // Convert unique undirected edges to directed edges
+            const adj = Array.from({ length: vertices.length }, () => []);
+            const directedEdges = [];
+
+            undirectedEdges.forEach(edge => {
+                const v1 = vertices[edge.from];
+                const v2 = vertices[edge.to];
+                
+                // Edge direction 1
+                const angle1 = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+                const de1 = { from: v1.id, to: v2.id, angle: angle1 };
+                adj[v1.id].push(de1);
+                directedEdges.push(de1);
+
+                // Edge direction 2
+                const angle2 = Math.atan2(v1.y - v2.y, v1.x - v2.x);
+                const de2 = { from: v2.id, to: v1.id, angle: angle2 };
+                adj[v2.id].push(de2);
+                directedEdges.push(de2);
+            });
+
+            // Sort CCW angle sorting on adjacency list vertices
             for (let i = 0; i < vertices.length; i++) {
                 adj[i].sort((a, b) => a.angle - b.angle);
             }
 
-            // Step 4: Vertical Raycast upwards from cursor position to find candidate edge
-            const px = clickWorld.x;
-            const py = clickWorld.y;
-            const intersectingEdges = [];
+            // Trace ALL closed planar faces inside graph
+            const visitedEdges = new Set();
+            const candidates = [];
 
-            directedEdges.forEach(e => {
-                const v1 = vertices[e.from];
-                const v2 = vertices[e.to];
-                if ((v1.x <= px && v2.x > px) || (v2.x <= px && v1.x > px)) {
-                    const t = (px - v1.x) / (v2.x - v1.x);
-                    const intersectY = v1.y + t * (v2.y - v1.y);
-                    if (intersectY < py) {
-                        intersectingEdges.push({ edge: e, y: intersectY });
-                    }
-                }
-            });
+            directedEdges.forEach(startEdge => {
+                const edgeKey = `${startEdge.from}->${startEdge.to}`;
+                if (visitedEdges.has(edgeKey)) return;
 
-            if (intersectingEdges.length === 0) return; // Do nothing if click is outside all bounding lines
+                const path = [];
+                let current = startEdge;
+                let success = false;
 
-            intersectingEdges.sort((a, b) => b.y - a.y);
-            const closest = intersectingEdges[0].edge;
+                for (let step = 0; step < 400; step++) {
+                    path.push(current);
+                    const currKey = `${current.from}->${current.to}`;
+                    visitedEdges.add(currKey);
 
-            // Step 5: Try tracing cycles in CCW and CW directions
-            const twinEdge = directedEdges.find(e => e.from === closest.to && e.to === closest.from);
-            const candidates = [closest];
-            if (twinEdge) candidates.push(twinEdge);
+                    const vId = current.to;
+                    const edgesFromV = adj[vId];
+                    if (!edgesFromV || edgesFromV.length === 0) break;
 
-            let bestPolygon = null;
-            let minArea = Infinity;
-
-            candidates.forEach(startEdge => {
-                const path = traceFace(startEdge, adj, vertices);
-                if (path) {
-                    const polyPoints = path.map(e => ({ x: vertices[e.from].x, y: vertices[e.from].y }));
-                    if (isPointInPolygon(clickWorld, polyPoints)) {
-                        const area = Math.abs(getPolygonArea(polyPoints));
-                        // Ignore degenerate loops/lines
-                        if (area > 5 && area < minArea) {
-                            minArea = area;
-                            bestPolygon = polyPoints;
+                    let incomingIndex = -1;
+                    for (let idx = 0; idx < edgesFromV.length; idx++) {
+                        if (edgesFromV[idx].to === current.from) {
+                            incomingIndex = idx;
+                            break;
                         }
                     }
+                    if (incomingIndex === -1) break;
+
+                    // CCW turn selection
+                    const nextIdx = (incomingIndex + 1) % edgesFromV.length;
+                    const nextEdge = edgesFromV[nextIdx];
+
+                    if (nextEdge.from === startEdge.from && nextEdge.to === startEdge.to) {
+                        success = true;
+                        break;
+                    }
+
+                    const nextKey = `${nextEdge.from}->${nextEdge.to}`;
+                    if (visitedEdges.has(nextKey)) break;
+                    current = nextEdge;
+                }
+
+                if (success && path.length >= 3) {
+                    const polyPoints = path.map(e => ({ x: vertices[e.from].x, y: vertices[e.from].y }));
+                    const area = getPolygonArea(polyPoints);
+                    // Filter boundaries wrapping containing mouse coordinate click
+                    if (isPointInPolygon(clickWorld, polyPoints)) {
+                        candidates.push({
+                            points: polyPoints,
+                            area: Math.abs(area)
+                        });
+                    }
                 }
             });
 
-            // Step 6: If shape is closed, fill with solid color
-            if (bestPolygon) {
-                const isDuplicate = state.fills.some(f => {
-                    if (f.points.length !== bestPolygon.length) return false;
-                    return f.points.every((pt, idx) => 
-                        Math.abs(pt.x - bestPolygon[idx].x) < 0.1 && 
-                        Math.abs(pt.y - bestPolygon[idx].y) < 0.1
-                    );
-                });
+            if (candidates.length === 0) return; // Exit and do nothing if click coordinates are uncontained
 
-                if (!isDuplicate) {
-                    state.fills.push({
-                        points: bestPolygon,
-                        color: state.selectedColor
-                    });
-                    saveHistory();
-                    showToast('Shape filled!', 'success');
-                }
-            } else {
-                // Do nothing if shape isn't closed
+            // Select the smallest surrounding containing polygon
+            candidates.sort((a, b) => a.area - b.area);
+            const targetShape = candidates[0].points;
+
+            // Prevent filling degenerate structures or zero-size artifacts
+            if (candidates[0].area < 5) return;
+
+            // Ensure no duplicate shapes are overlayed on top of each other
+            const isDuplicate = state.fills.some(f => {
+                if (f.points.length !== targetShape.length) return false;
+                return f.points.every((pt, idx) => 
+                    Math.abs(pt.x - targetShape[idx].x) < 0.2 && 
+                    Math.abs(pt.y - targetShape[idx].y) < 0.2
+                );
+            });
+
+            if (!isDuplicate) {
+                state.fills.push({
+                    points: targetShape,
+                    color: state.selectedColor
+                });
+                saveHistory();
+                showToast('Shape filled!', 'success');
             }
         }
 
@@ -1435,7 +1475,7 @@
                 zoom: state.transform.zoom
             };
 
-            // Fix: Capture and render fills on screenshot first
+            // Fix: Render fills first onto the captured image
             drawFills(tempCtx, modifiedTransform);
 
             // Capture Grid
@@ -1589,6 +1629,7 @@
             }
         }
 
+        // Setup CCW adjacency mapping parameters
         function setTool(toolName) {
             state.tool = toolName;
             const tools = ['draw', 'fill', 'pan', 'erase', 'snip'];
