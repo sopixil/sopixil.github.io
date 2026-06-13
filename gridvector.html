@@ -100,6 +100,14 @@
                         <kbd class="text-[9px] bg-indigo-700 px-1 py-0.5 rounded opacity-85">D</kbd>
                     </button>
 
+                    <button id="tool-fill" onclick="setTool('fill')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="paint-bucket" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Fill Closed Shape</span>
+                        </div>
+                        <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-85">F</kbd>
+                    </button>
+
                     <button id="tool-pan" onclick="setTool('pan')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
                         <div class="flex items-center gap-2">
                             <i data-lucide="move" class="w-3.5 h-3.5"></i>
@@ -111,7 +119,7 @@
                     <button id="tool-erase" onclick="setTool('erase')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
                         <div class="flex items-center gap-2">
                             <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-                            <span>Erase Line</span>
+                            <span>Erase Line/Fill</span>
                         </div>
                         <kbd class="text-[9px] bg-slate-800 px-1 py-0.5 rounded opacity-85">E</kbd>
                     </button>
@@ -129,7 +137,7 @@
                 <div class="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-2.5">
                     <!-- Color Presets -->
                     <div>
-                        <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Stroke Color</span>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Active Color</span>
                         <div class="grid grid-cols-5 gap-1.5" id="colorPalette">
                             <!-- Populated dynamically -->
                         </div>
@@ -271,7 +279,7 @@
             <span class="text-slate-600">|</span>
             <span><strong>Scroll/Zoom:</strong> Mouse Wheel</span>
         </div>
-        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.6 // Canvas</span>
+        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.7 // Canvas</span>
     </footer>
 
     <!-- INTERACTIVE HELP DIALOG MODAL -->
@@ -296,6 +304,10 @@
                         <div class="flex gap-2 items-center bg-slate-950/40 p-2 rounded-xl border border-slate-800/40">
                             <span class="bg-indigo-950 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-800/50">D</span>
                             <span><strong>Draw Mode:</strong> Instantly drag from point to point. Snaps cleanly.</span>
+                        </div>
+                        <div class="flex gap-2 items-center bg-slate-950/40 p-2 rounded-xl border border-slate-800/40">
+                            <span class="bg-indigo-950 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-800/50">F</span>
+                            <span><strong>Fill Bucket:</strong> Tap inside any closed set of vector lines to apply a solid fill.</span>
                         </div>
                         <div class="flex gap-2 items-center bg-slate-950/40 p-2 rounded-xl border border-slate-800/40">
                             <span class="bg-indigo-950 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-800/50">Space + Drag</span>
@@ -385,6 +397,7 @@
         // App State
         let state = {
             lines: [],
+            fills: [], // Array of solid fills: { points: [{x,y}...], color }
             selectedColor: '#06b6d4',
             strokeWeight: 3,
             tool: 'draw', 
@@ -396,7 +409,6 @@
                 y: window.innerHeight / 2,
                 zoom: 1
             },
-            // Start collapsed by default as requested
             leftPanelCollapsed: true,
             rightPanelCollapsed: true,
             isDrawing: false,
@@ -412,7 +424,7 @@
         };
 
         // History Undo/Redo Stacks
-        let history = [[]];
+        let history = [];
         let historyIndex = 0;
 
         const GRID_SIZE = 40; 
@@ -718,6 +730,23 @@
             }
         }
 
+        function drawFills(renderCtx, rTransform) {
+            state.fills.forEach(fill => {
+                if (fill.points.length < 3) return;
+                renderCtx.beginPath();
+                renderCtx.fillStyle = fill.color;
+                
+                const start = worldToScreen(fill.points[0].x, fill.points[0].y);
+                renderCtx.moveTo(start.x, start.y);
+                for (let i = 1; i < fill.points.length; i++) {
+                    const pt = worldToScreen(fill.points[i].x, fill.points[i].y);
+                    renderCtx.lineTo(pt.x, pt.y);
+                }
+                renderCtx.closePath();
+                renderCtx.fill();
+            });
+        }
+
         function drawLines(renderCtx, rTransform) {
             state.lines.forEach(line => {
                 renderCtx.beginPath();
@@ -812,8 +841,16 @@
             ctx.fillStyle = t.bg;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Draw fills at the bottom layer
+            drawFills(ctx, state.transform);
+            
+            // Draw grid elements on top of fills
             drawGrid(ctx, canvas.width, canvas.height, state.transform, state.theme);
+            
+            // Draw vector borders
             drawLines(ctx, state.transform);
+            
+            // Draw user interaction UI overlays
             drawInteractiveOverlays();
 
             requestAnimationFrame(animate);
@@ -952,6 +989,9 @@
                     state.drawStart = getNearestGridPoint(cx, cy);
                     state.drawEnd = { ...state.drawStart };
                 } 
+                else if (state.tool === 'fill') {
+                    tryFillShape(cx, cy);
+                }
                 else if (state.tool === 'erase') {
                     state.isErasing = true;
                     eraseLineAt(cx, cy);
@@ -1050,19 +1090,263 @@
             updateZoomDisplay();
         }
 
+        // --- GRAPH & SHAPE FILL MATHEMATICS ---
+
+        function isPointOnSegment(p, p1, p2) {
+            const d1 = Math.hypot(p.x - p1.x, p.y - p1.y);
+            const d2 = Math.hypot(p.x - p2.x, p.y - p2.y);
+            const dLen = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+            // Grid-spacing tolerance bounds
+            return Math.abs(d1 + d2 - dLen) < 0.2;
+        }
+
+        function getIntersection(p1, p2, p3, p4) {
+            const det = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+            if (Math.abs(det) < 1e-9) return null; // Parallel segments
+            
+            const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / det;
+            const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / det;
+            
+            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+                return {
+                    x: p1.x + t * (p2.x - p1.x),
+                    y: p1.y + t * (p2.y - p1.y)
+                };
+            }
+            return null;
+        }
+
+        function isPointInPolygon(pt, polygon) {
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].x, yi = polygon[i].y;
+                const xj = polygon[j].x, yj = polygon[j].y;
+                const intersect = ((yi > pt.y) !== (yj > pt.y))
+                    && (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function getPolygonArea(pts) {
+            let area = 0;
+            for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+                area += (pts[j].x * pts[i].y) - (pts[i].x * pts[j].y);
+            }
+            return area / 2;
+        }
+
+        function traceFace(startEdge, adj, vertices) {
+            const path = [startEdge];
+            let current = startEdge;
+            const visited = new Set();
+            visited.add(`${current.from}->${current.to}`);
+
+            // Max traversal depth of 200 vertices
+            for (let step = 0; step < 200; step++) {
+                const vId = current.to;
+                const edgesFromV = adj[vId];
+                if (edgesFromV.length === 0) return null;
+
+                // Incoming directional index search
+                let incomingIndex = -1;
+                for (let idx = 0; idx < edgesFromV.length; idx++) {
+                    if (edgesFromV[idx].to === current.from) {
+                        incomingIndex = idx;
+                        break;
+                    }
+                }
+
+                if (incomingIndex === -1) return null;
+
+                // Grab CCW next neighbor from sorted outgoing adjacencies
+                const nextIdx = (incomingIndex + 1) % edgesFromV.length;
+                const nextEdge = edgesFromV[nextIdx];
+
+                const edgeKey = `${nextEdge.from}->${nextEdge.to}`;
+                if (nextEdge.from === startEdge.from && nextEdge.to === startEdge.to) {
+                    return path; // Complete bounding circuit found
+                }
+                if (visited.has(edgeKey)) {
+                    return null; // Self-intersecting cycle
+                }
+                visited.add(edgeKey);
+                path.push(nextEdge);
+                current = nextEdge;
+            }
+            return null;
+        }
+
+        function tryFillShape(cx, cy) {
+            const clickWorld = screenToWorld(cx, cy);
+            
+            // Step 1: Detect unique graph coordinates
+            const vertices = [];
+            function addVertex(x, y) {
+                const threshold = 0.5;
+                for (let v of vertices) {
+                    if (Math.hypot(v.x - x, v.y - y) < threshold) {
+                        return v;
+                    }
+                }
+                const newV = { id: vertices.length, x, y };
+                vertices.push(newV);
+                return newV;
+            }
+
+            state.lines.forEach(line => {
+                addVertex(line.x1, line.y1);
+                addVertex(line.x2, line.y2);
+            });
+
+            // Step 2: Extract segment intersections
+            for (let i = 0; i < state.lines.length; i++) {
+                for (let j = i + 1; j < state.lines.length; j++) {
+                    const l1 = state.lines[i];
+                    const l2 = state.lines[j];
+                    const ipt = getIntersection(
+                        { x: l1.x1, y: l1.y1 }, { x: l1.x2, y: l1.y2 },
+                        { x: l2.x1, y: l2.y1 }, { x: l2.x2, y: l2.y2 }
+                    );
+                    if (ipt) {
+                        addVertex(ipt.x, ipt.y);
+                    }
+                }
+            }
+
+            const adj = Array.from({ length: vertices.length }, () => []);
+            const directedEdges = [];
+
+            function addDirectedEdge(fromV, toV) {
+                const angle = Math.atan2(toV.y - fromV.y, toV.x - fromV.x);
+                const edge = { from: fromV.id, to: toV.id, angle };
+                adj[fromV.id].push(edge);
+                directedEdges.push(edge);
+            }
+
+            // Step 3: Split drawn line edges along intersection points
+            state.lines.forEach(line => {
+                const p1 = { x: line.x1, y: line.y1 };
+                const p2 = { x: line.x2, y: line.y2 };
+                const segmentVertices = [];
+                vertices.forEach(v => {
+                    if (isPointOnSegment(v, p1, p2)) {
+                        segmentVertices.push(v);
+                    }
+                });
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                segmentVertices.sort((a, b) => {
+                    const dotA = (a.x - p1.x) * dx + (a.y - p1.y) * dy;
+                    const dotB = (b.x - p1.x) * dx + (b.y - p1.y) * dy;
+                    return dotA - dotB;
+                });
+                
+                for (let k = 0; k < segmentVertices.length - 1; k++) {
+                    const v1 = segmentVertices[k];
+                    const v2 = segmentVertices[k+1];
+                    addDirectedEdge(v1, v2);
+                    addDirectedEdge(v2, v1);
+                }
+            });
+
+            // Sort adjacency edges counter-clockwise at each node
+            for (let i = 0; i < vertices.length; i++) {
+                adj[i].sort((a, b) => a.angle - b.angle);
+            }
+
+            // Step 4: Vertical Raycast upwards from cursor position to find candidate edge
+            const px = clickWorld.x;
+            const py = clickWorld.y;
+            const intersectingEdges = [];
+
+            directedEdges.forEach(e => {
+                const v1 = vertices[e.from];
+                const v2 = vertices[e.to];
+                if ((v1.x <= px && v2.x > px) || (v2.x <= px && v1.x > px)) {
+                    const t = (px - v1.x) / (v2.x - v1.x);
+                    const intersectY = v1.y + t * (v2.y - v1.y);
+                    if (intersectY < py) {
+                        intersectingEdges.push({ edge: e, y: intersectY });
+                    }
+                }
+            });
+
+            if (intersectingEdges.length === 0) return; // Do nothing if click is outside all bounding lines
+
+            intersectingEdges.sort((a, b) => b.y - a.y);
+            const closest = intersectingEdges[0].edge;
+
+            // Step 5: Try tracing cycles in CCW and CW directions
+            const twinEdge = directedEdges.find(e => e.from === closest.to && e.to === closest.from);
+            const candidates = [closest];
+            if (twinEdge) candidates.push(twinEdge);
+
+            let bestPolygon = null;
+            let minArea = Infinity;
+
+            candidates.forEach(startEdge => {
+                const path = traceFace(startEdge, adj, vertices);
+                if (path) {
+                    const polyPoints = path.map(e => ({ x: vertices[e.from].x, y: vertices[e.from].y }));
+                    if (isPointInPolygon(clickWorld, polyPoints)) {
+                        const area = Math.abs(getPolygonArea(polyPoints));
+                        // Ignore degenerate loops/lines
+                        if (area > 5 && area < minArea) {
+                            minArea = area;
+                            bestPolygon = polyPoints;
+                        }
+                    }
+                }
+            });
+
+            // Step 6: If shape is closed, fill with solid color
+            if (bestPolygon) {
+                const isDuplicate = state.fills.some(f => {
+                    if (f.points.length !== bestPolygon.length) return false;
+                    return f.points.every((pt, idx) => 
+                        Math.abs(pt.x - bestPolygon[idx].x) < 0.1 && 
+                        Math.abs(pt.y - bestPolygon[idx].y) < 0.1
+                    );
+                });
+
+                if (!isDuplicate) {
+                    state.fills.push({
+                        points: bestPolygon,
+                        color: state.selectedColor
+                    });
+                    saveHistory();
+                    showToast('Shape filled!', 'success');
+                }
+            } else {
+                // Do nothing if shape isn't closed
+            }
+        }
+
         // --- ERASER RAYCAST LOGIC ---
 
         function eraseLineAt(cx, cy) {
             const worldLoc = screenToWorld(cx, cy);
             let deletedAny = false;
-            const threshold = (16 * window.devicePixelRatio) / state.transform.zoom;
+            
+            // Erase fills
+            const originalFillCount = state.fills.length;
+            state.fills = state.fills.filter(fill => !isPointInPolygon(worldLoc, fill.points));
+            if (state.fills.length < originalFillCount) {
+                deletedAny = true;
+            }
 
+            // Erase lines
+            const threshold = (16 * window.devicePixelRatio) / state.transform.zoom;
+            const originalLineCount = state.lines.length;
             state.lines = state.lines.filter(line => {
                 const dist = getDistanceToSegmentSq(worldLoc, {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2});
-                const matches = Math.sqrt(dist) < threshold;
-                if (matches) deletedAny = true;
-                return !matches;
+                return Math.sqrt(dist) >= threshold;
             });
+            if (state.lines.length < originalLineCount) {
+                deletedAny = true;
+            }
 
             if (deletedAny) {
                 saveHistory();
@@ -1144,6 +1428,10 @@
                 zoom: state.transform.zoom
             };
 
+            // Capture fills
+            drawFills(tempCtx, modifiedTransform);
+
+            // Capture Grid
             if (gridVisible || linesVisible) {
                 const oldPointsVal = state.gridPointsVisible;
                 const oldLinesVal = state.gridLinesVisible;
@@ -1156,6 +1444,7 @@
                 state.gridLinesVisible = oldLinesVal;
             }
 
+            // Capture Borders
             const originalLines = JSON.parse(JSON.stringify(state.lines));
             if (mode === 'light') {
                 state.lines.forEach(line => {
@@ -1191,20 +1480,19 @@
             if (historyIndex < history.length - 1) {
                 history = history.slice(0, historyIndex + 1);
             }
-            history.push(JSON.parse(JSON.stringify(state.lines)));
+            history.push(JSON.stringify({
+                lines: state.lines,
+                fills: state.fills
+            }));
             historyIndex = history.length - 1;
-        }
-
-        // Action helper function to allow panel auto-collapse on trigger click
-        function triggerAction(actionFn) {
-            actionFn();
-            collapseAllPanelsAutomatically();
         }
 
         function undo() {
             if (historyIndex > 0) {
                 historyIndex--;
-                state.lines = JSON.parse(JSON.stringify(history[historyIndex]));
+                const hist = JSON.parse(history[historyIndex]);
+                state.lines = hist.lines || [];
+                state.fills = hist.fills || [];
                 updateLineCounter();
                 showToast('Undone last action', 'info');
             } else {
@@ -1215,7 +1503,9 @@
         function redo() {
             if (historyIndex < history.length - 1) {
                 historyIndex++;
-                state.lines = JSON.parse(JSON.stringify(history[historyIndex]));
+                const hist = JSON.parse(history[historyIndex]);
+                state.lines = hist.lines || [];
+                state.fills = hist.fills || [];
                 updateLineCounter();
                 showToast('Redone last action', 'info');
             } else {
@@ -1225,6 +1515,7 @@
 
         function clearCanvas() {
             state.lines = [];
+            state.fills = [];
             saveHistory();
             updateLineCounter();
             showToast('Canvas cleared!', 'info');
@@ -1277,6 +1568,7 @@
             } else {
                 const toolKey = e.key.toLowerCase();
                 if (toolKey === 'd') setTool('draw');
+                if (toolKey === 'f') setTool('fill');
                 if (toolKey === 'p') setTool('pan');
                 if (toolKey === 'e') setTool('erase');
                 if (toolKey === 's') setTool('snip');
@@ -1292,7 +1584,7 @@
 
         function setTool(toolName) {
             state.tool = toolName;
-            const tools = ['draw', 'pan', 'erase', 'snip'];
+            const tools = ['draw', 'fill', 'pan', 'erase', 'snip'];
             tools.forEach(t => {
                 const btn = document.getElementById(`tool-${t}`);
                 if (t === toolName) {
