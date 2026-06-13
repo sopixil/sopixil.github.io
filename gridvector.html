@@ -196,7 +196,7 @@
                             <span>Show Grid Points</span>
                             <input type="checkbox" id="toggleGridPoints" checked class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
                         </label>
-                        <label class="flex items-center justify-between text-[10px] text-slate-300 cursor-pointer">
+                        <label class="flex items-center justify-between text-[10px] text-slate-305 cursor-pointer">
                             <span>Show Grid Lines</span>
                             <input type="checkbox" id="toggleGridLines" class="rounded bg-slate-900 border-slate-800 text-indigo-600 focus:ring-indigo-500">
                         </label>
@@ -279,7 +279,7 @@
             <span class="text-slate-600">|</span>
             <span><strong>Scroll/Zoom:</strong> Mouse Wheel</span>
         </div>
-        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.7 // Canvas</span>
+        <span class="text-[10px] text-slate-500 bg-slate-950/40 px-2 py-1 rounded-lg">v1.8 // Canvas</span>
     </footer>
 
     <!-- INTERACTIVE HELP DIALOG MODAL -->
@@ -409,6 +409,7 @@
                 y: window.innerHeight / 2,
                 zoom: 1
             },
+            // Start collapsed by default as requested
             leftPanelCollapsed: true,
             rightPanelCollapsed: true,
             isDrawing: false,
@@ -736,10 +737,16 @@
                 renderCtx.beginPath();
                 renderCtx.fillStyle = fill.color;
                 
-                const start = worldToScreen(fill.points[0].x, fill.points[0].y);
+                // Helper mapping closure for coordinates matching device scaling parameters
+                const getScreenPt = (pt) => ({
+                    x: pt.x * rTransform.zoom + rTransform.x,
+                    y: pt.y * rTransform.zoom + rTransform.y
+                });
+
+                const start = getScreenPt(fill.points[0]);
                 renderCtx.moveTo(start.x, start.y);
                 for (let i = 1; i < fill.points.length; i++) {
-                    const pt = worldToScreen(fill.points[i].x, fill.points[i].y);
+                    const pt = getScreenPt(fill.points[i]);
                     renderCtx.lineTo(pt.x, pt.y);
                 }
                 renderCtx.closePath();
@@ -1428,7 +1435,7 @@
                 zoom: state.transform.zoom
             };
 
-            // Capture fills
+            // Fix: Capture and render fills on screenshot first
             drawFills(tempCtx, modifiedTransform);
 
             // Capture Grid
