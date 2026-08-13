@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Master Checkers - Skeuomorphic Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --board-size: min(92vw, 540px);
+      --square-size: calc(var(--board-size) / 8);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      background: radial-gradient(circle at center, #2c1a11 0%, #120a06 100%);
+      color: #f3e5ab;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .serif-title {
+      font-family: 'Cinzel', serif;
+    }
+
+    /* Skeuomorphic Wood Texture Backgrounds */
+    .bg-wood-table {
+      background-color: #1a0f0a;
+      background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0),
+        linear-gradient(90deg, #150c07 0%, #22140d 50%, #150c07 100%);
+      background-size: 24px 24px, 100% 100%;
+    }
+
+    /* Outer Board Bevel Frame */
+    .board-frame {
+      width: calc(var(--board-size) + 32px);
+      height: calc(var(--board-size) + 32px);
+      background: linear-gradient(135deg, #4a2810 0%, #281406 50%, #170a02 100%);
+      border-radius: 16px;
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.8),
+        0 8px 16px rgba(0, 0, 0, 0.6),
+        inset 0 2px 3px rgba(255, 215, 0, 0.25),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.9);
+      padding: 16px;
+      position: relative;
+    }
+
+    /* Brass Corners */
+    .brass-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle at 30% 30%, #ffe89e, #c59b27 60%, #684f0c 100%);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+      border-radius: 3px;
+    }
+    .corner-tl { top: 6px; left: 6px; }
+    .corner-tr { top: 6px; right: 6px; }
+    .corner-bl { bottom: 6px; left: 6px; }
+    .corner-br { bottom: 6px; right: 6px; }
+
+    /* The 8x8 Board Container */
+    .board-grid {
+      width: var(--board-size);
+      height: var(--board-size);
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9);
+      border: 2px solid #100703;
+    }
+
+    /* Squares */
+    .sq-light {
+      background: linear-gradient(135deg, #e8c99b 0%, #d4a76a 100%);
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.1);
+    }
+
+    .sq-dark {
+      background: linear-gradient(135deg, #422513 0%, #271408 100%);
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    .sq-dark.highlight-move {
+      background: linear-gradient(135deg, #385e38 0%, #1e3b1e 100%);
+      cursor: pointer;
+    }
+    .sq-dark.highlight-move::after {
+      content: '';
+      position: absolute;
+      width: 35%;
+      height: 35%;
+      top: 32.5%;
+      left: 32.5%;
+      background: radial-gradient(circle, #52e352 0%, #208b20 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 10px #42d142, inset 0 1px 2px rgba(255,255,255,0.8);
+      animation: pulseMove 1.4s infinite ease-in-out;
+    }
+
+    @keyframes pulseMove {
+      0%, 100% { transform: scale(0.85); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .sq-dark.last-move-src, .sq-dark.last-move-dst {
+      box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    /* Skeuomorphic Checkers Pieces */
+    .piece {
+      width: 82%;
+      height: 82%;
+      margin: 9%;
+      border-radius: 50%;
+      position: relative;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .piece::before {
+      /* Inner concentric ridge for classic checker piece look */
+      content: '';
+      position: absolute;
+      width: 68%;
+      height: 68%;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .piece::after {
+      /* Second inner ridge */
+      content: '';
+      position: absolute;
+      width: 42%;
+      height: 42%;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+    }
+
+    /* Light Piece (Player 1 / Human - Cream Ivory) */
+    .piece-light {
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f1e4cf 45%, #cbb18a 85%, #967d58 100%);
+      box-shadow: 
+        0 6px 8px rgba(0, 0, 0, 0.6),
+        0 2px 3px rgba(0, 0, 0, 0.4),
+        inset 0 3px 4px rgba(255, 255, 255, 0.9),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.4);
+      border: 1px solid #baa27c;
+    }
+
+    /* Dark Piece (Player 2 / AI - Obsidian Dark Mahogany) */
+    .piece-dark {
+      background: radial-gradient(circle at 35% 30%, #5a382e 0%, #2b1812 50%, #150a07 85%, #080301 100%);
+      box-shadow: 
+        0 6px 8px rgba(0, 0, 0, 0.7),
+        0 2px 3px rgba(0, 0, 0, 0.5),
+        inset 0 2px 3px rgba(255, 255, 255, 0.3),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.8);
+      border: 1px solid #1a0c07;
+    }
+
+    /* Selected state */
+    .piece.selected {
+      transform: translateY(-6px) scale(1.08);
+      box-shadow: 
+        0 14px 18px rgba(0, 0, 0, 0.7),
+        0 0 15px #f3be48,
+        inset 0 3px 4px rgba(255, 255, 255, 0.9);
+      z-index: 10;
+    }
+
+    /* Forced jump indicator pulse */
+    .piece.must-jump {
+      animation: alertJump 1.2s infinite ease-in-out;
+    }
+
+    @keyframes alertJump {
+      0%, 100% { box-shadow: 0 6px 8px rgba(0,0,0,0.6), 0 0 4px #e74c3c; }
+      50% { box-shadow: 0 6px 8px rgba(0,0,0,0.6), 0 0 16px #ff3823; }
+    }
+
+    /* Kings Metallic Crown */
+    .crown-icon {
+      width: 55%;
+      height: 55%;
+      filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.7));
+      z-index: 5;
+    }
+
+    /* Skeuomorphic Glass/Wood Panels */
+    .panel-wood {
+      background: linear-gradient(180deg, #3d2213 0%, #261309 100%);
+      border: 1px solid #5a351f;
+      border-bottom: 2px solid #150a04;
+      border-radius: 12px;
+      box-shadow: 
+        0 8px 16px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-wood {
+      background: linear-gradient(180deg, #8a5327 0%, #573113 100%);
+      border: 1px solid #a86c39;
+      border-bottom: 3px solid #331a08;
+      color: #fff3d1;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.3);
+      transition: all 0.15s ease;
+    }
+
+    .btn-wood:active {
+      transform: translateY(2px);
+      border-bottom: 1px solid #331a08;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .btn-wood:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Custom Switch/Pill for Difficulty */
+    .diff-btn {
+      transition: all 0.2s ease;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 215, 0, 0.15);
+    }
+    .diff-btn.active {
+      background: linear-gradient(180deg, #c59b27 0%, #85610d 100%);
+      color: #ffffff;
+      border-color: #ffe89e;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    /* Confetti animation for win screen */
+    .win-overlay {
+      backdrop-filter: blur(6px);
+      background: rgba(15, 8, 4, 0.85);
+    }
+  </style>
+</head>
+<body class="bg-wood-table min-h-screen flex flex-col items-center justify-between p-2 sm:p-4">
+
+  <!-- Header / Title -->
+  <header class="w-full max-w-lg text-center mt-1 mb-2">
+    <div class="flex items-center justify-between px-2">
+      <h1 class="serif-title text-2xl sm:text-3xl font-black tracking-wider text-amber-200 drop-shadow-md">
+        ROYAL CHECKERS
+      </h1>
+      <button id="soundToggleBtn" class="btn-wood text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+        <span id="soundIcon">🔊</span> Audio
+      </button>
+    </div>
+  </header>
+
+  <!-- Player Info Cards Bar -->
+  <div class="w-full max-w-md grid grid-cols-2 gap-3 mb-2 px-1">
+    <!-- AI Card -->
+    <div class="panel-wood p-2 sm:p-3 flex items-center justify-between relative overflow-hidden" id="card-ai">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full piece-dark flex-shrink-0 flex items-center justify-center">
+          <span class="text-xs text-amber-100 font-bold">AI</span>
+        </div>
+        <div>
+          <div class="text-xs text-amber-300/80 font-semibold uppercase tracking-wider">Opponent</div>
+          <div class="text-sm font-bold text-amber-100" id="aiNameText">AI (Medium)</div>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="text-lg font-black text-amber-200" id="count-dark">12</div>
+        <div class="text-[10px] text-amber-400/60 uppercase">Pieces</div>
+      </div>
+      <div id="aiTurnIndicator" class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 hidden animate-pulse"></div>
+    </div>
+
+    <!-- Human Card -->
+    <div class="panel-wood p-2 sm:p-3 flex items-center justify-between relative overflow-hidden" id="card-human">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full piece-light flex-shrink-0 flex items-center justify-center">
+          <span class="text-xs text-amber-900 font-bold">YOU</span>
+        </div>
+        <div>
+          <div class="text-xs text-amber-300/80 font-semibold uppercase tracking-wider">Player</div>
+          <div class="text-sm font-bold text-amber-100">You (Light)</div>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="text-lg font-black text-amber-200" id="count-light">12</div>
+        <div class="text-[10px] text-amber-400/60 uppercase">Pieces</div>
+      </div>
+      <div id="humanTurnIndicator" class="absolute bottom-0 left-0 right-0 h-1 bg-amber-400"></div>
+    </div>
+  </div>
+
+  <!-- Main Game Board Container -->
+  <main class="flex-1 flex items-center justify-center my-1">
+    <div class="board-frame flex items-center justify-center">
+      <div class="brass-corner corner-tl"></div>
+      <div class="brass-corner corner-tr"></div>
+      <div class="brass-corner corner-bl"></div>
+      <div class="brass-corner corner-br"></div>
+      
+      <div id="board" class="board-grid"></div>
+    </div>
+  </main>
+
+  <!-- Controls Panel -->
+  <footer class="w-full max-w-md mt-2 mb-1 px-1 flex flex-col gap-2">
+    <!-- Status Message Banner -->
+    <div class="panel-wood py-2 px-4 text-center">
+      <span id="statusText" class="text-xs sm:text-sm font-medium text-amber-200">
+        Your Turn! Select a light piece to move.
+      </span>
+    </div>
+
+    <!-- Difficulty & Action Controls -->
+    <div class="panel-wood p-2 flex items-center justify-between gap-2">
+      <!-- Difficulty selector -->
+      <div class="flex bg-black/40 p-1 rounded-lg border border-amber-900/50 text-xs">
+        <button class="diff-btn px-2.5 py-1 rounded-md text-amber-200" data-diff="easy">Easy</button>
+        <button class="diff-btn active px-2.5 py-1 rounded-md text-amber-200" data-diff="medium">Med</button>
+        <button class="diff-btn px-2.5 py-1 rounded-md text-amber-200" data-diff="hard">Hard</button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2">
+        <button id="undoBtn" class="btn-wood text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+          <span>↩</span> Undo
+        </button>
+        <button id="newGameBtn" class="btn-wood text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+          <span>🔄</span> Reset
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Dialog for Game Over -->
+  <div id="gameOverModal" class="fixed inset-0 win-overlay z-50 flex items-center justify-center p-4 hidden">
+    <div class="panel-wood max-w-xs w-full p-6 text-center shadow-2xl border-2 border-amber-500/40 transform transition-all scale-100">
+      <div id="modalIcon" class="text-5xl mb-2">🏆</div>
+      <h2 id="modalTitle" class="serif-title text-2xl font-black text-amber-200 mb-1">VICTORY!</h2>
+      <p id="modalDesc" class="text-sm text-amber-300/80 mb-6">You outmaneuvered the AI opponent and claimed the board!</p>
+      <button id="modalRestartBtn" class="btn-wood w-full py-2.5 text-sm rounded-xl">
+        Play Again
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIZER (Web Audio API for realistic tactile sounds)
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      }
+
+      playWoodClick() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.05);
+
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+      }
+
+      playJumpSound() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.09);
+
+        gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.09);
+      }
+
+      playKingSound() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        [261.63, 329.63, 392.00, 523.25].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.06);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.06 + 0.15);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.06);
+          osc.stop(this.ctx.currentTime + idx * 0.06 + 0.15);
+        });
+      }
+
+      playWinFanfare() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [392, 523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.12 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.12);
+          osc.stop(this.ctx.currentTime + idx * 0.12 + 0.3);
+        });
+      }
+    }
+
+    const audio = new SoundEngine();
+
+    /* =========================================================================
+       CHECKERS CONSTANTS & BOARD LOGIC
+       =========================================================================
+       Player Constants:
+       1  = Light (Human, starts at bottom rows 5,6,7, moves UP [r - 1])
+       2  = Light King
+      -1  = Dark (AI, starts at top rows 0,1,2, moves DOWN [r + 1])
+      -2  = Dark King
+       0  = Empty Square
+    ========================================================================= */
+
+    const EMPTY = 0;
+    const LIGHT = 1;
+    const LIGHT_KING = 2;
+    const DARK = -1;
+    const DARK_KING = -2;
+
+    const CROWN_SVG = `
+      <svg class="crown-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" fill="url(#goldGrad)" stroke="#523906" stroke-width="1.2"/>
+        <path d="M5 18H19V19.5H5V18Z" fill="url(#goldGrad)" stroke="#523906" stroke-width="0.8"/>
+        <defs>
+          <linearGradient id="goldGrad" x1="3" y1="4" x2="21" y2="19.5" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#FFF3B0"/>
+            <stop offset="0.5" stop-color="#E5AC24"/>
+            <stop offset="1" stop-color="#996C08"/>
+          </linearGradient>
+        </defs>
+      </svg>`;
+
+    class CheckersGame {
+      constructor() {
+        this.board = [];
+        this.turn = LIGHT; // Human starts
+        this.selectedSquare = null; // {r, c}
+        this.validMovesForSelected = [];
+        this.mustJumpFrom = null; // For forced multi-jumps
+        this.difficulty = 'medium'; // 'easy', 'medium', 'hard'
+        this.history = [];
+        this.isAiThinking = false;
+        this.lastMove = null; // {from: {r,c}, to: {r,c}}
+
+        this.initBoard();
+      }
+
+      initBoard() {
+        this.board = Array(8).fill(null).map(() => Array(8).fill(EMPTY));
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if ((r + c) % 2 === 1) {
+              if (r < 3) this.board[r][c] = DARK;
+              else if (r > 4) this.board[r][c] = LIGHT;
+            }
+          }
+        }
+        this.turn = LIGHT;
+        this.selectedSquare = null;
+        this.validMovesForSelected = [];
+        this.mustJumpFrom = null;
+        this.history = [];
+        this.isAiThinking = false;
+        this.lastMove = null;
+      }
+
+      saveState() {
+        this.history.push({
+          board: JSON.parse(JSON.stringify(this.board)),
+          turn: this.turn,
+          mustJumpFrom: this.mustJumpFrom ? { ...this.mustJumpFrom } : null,
+          lastMove: this.lastMove ? JSON.parse(JSON.stringify(this.lastMove)) : null
+        });
+      }
+
+      undo() {
+        if (this.isAiThinking || this.history.length === 0) return false;
+        
+        // Undo up to human's turn (usually 2 moves if AI played, 1 if early)
+        let targetState = null;
+        while (this.history.length > 0) {
+          const state = this.history.pop();
+          if (state.turn === LIGHT) {
+            targetState = state;
+            break;
+          }
+        }
+
+        if (targetState) {
+          this.board = targetState.board;
+          this.turn = targetState.turn;
+          this.mustJumpFrom = targetState.mustJumpFrom;
+          this.lastMove = targetState.lastMove;
+          this.selectedSquare = null;
+          this.validMovesForSelected = [];
+          return true;
+        }
+        return false;
+      }
+
+      isLight(piece) { return piece === LIGHT || piece === LIGHT_KING; }
+      isDark(piece) { return piece === DARK || piece === DARK_KING; }
+      isKing(piece) { return piece === LIGHT_KING || piece === DARK_KING; }
+
+      getPieceOwner(piece) {
+        if (this.isLight(piece)) return LIGHT;
+        if (this.isDark(piece)) return DARK;
+        return 0;
+      }
+
+      /* Get all legal moves for a given player on a board */
+      getAllLegalMoves(board, player) {
+        let allJumps = [];
+        let allSimple = [];
+
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const piece = board[r][c];
+            if (this.getPieceOwner(piece) === player) {
+              const pieceMoves = this.getMovesForPiece(board, r, c);
+              pieceMoves.forEach(m => {
+                if (m.jumped) allJumps.push(m);
+                else allSimple.push(m);
+              });
+            }
+          }
+        }
+
+        // Mandatory jumps rule
+        return allJumps.length > 0 ? allJumps : allSimple;
+      }
+
+      getMovesForPiece(board, r, c) {
+        const piece = board[r][c];
+        if (piece === EMPTY) return [];
+
+        const moves = [];
+        const isKingPiece = this.isKing(piece);
+        const player = this.getPieceOwner(piece);
+
+        // Direction of movement
+        // Light moves UP (row decrements: -1), Dark moves DOWN (row increments: +1)
+        const directions = [];
+        if (player === LIGHT || isKingPiece) directions.push([-1, -1], [-1, 1]);
+        if (player === DARK || isKingPiece) directions.push([1, -1], [1, 1]);
+
+        directions.forEach(([dr, dc]) => {
+          const nr = r + dr;
+          const nc = c + dc;
+
+          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+            // Simple Move
+            if (board[nr][nc] === EMPTY) {
+              moves.push({
+                from: { r, c },
+                to: { r: nr, c: nc },
+                jumped: null
+              });
+            } 
+            // Potential Jump Move
+            else if (this.getPieceOwner(board[nr][nc]) === -player) {
+              const jnr = r + 2 * dr;
+              const jnc = c + 2 * dc;
+              if (jnr >= 0 && jnr < 8 && jnc >= 0 && jnc < 8 && board[jnr][jnc] === EMPTY) {
+                moves.push({
+                  from: { r, c },
+                  to: { r: jnr, c: jnc },
+                  jumped: { r: nr, c: nc }
+                });
+              }
+            }
+          }
+        });
+
+        return moves;
+      }
+
+      /* Apply move to board state */
+      makeMove(move) {
+        const { from, to, jumped } = move;
+        const piece = this.board[from.r][from.c];
+        
+        this.saveState();
+
+        this.board[to.r][to.c] = piece;
+        this.board[from.r][from.c] = EMPTY;
+
+        let isCaptured = false;
+        if (jumped) {
+          this.board[jumped.r][jumped.c] = EMPTY;
+          isCaptured = true;
+        }
+
+        // Kinging logic
+        let newlyKinged = false;
+        if (piece === LIGHT && to.r === 0) {
+          this.board[to.r][to.c] = LIGHT_KING;
+          newlyKinged = true;
+        } else if (piece === DARK && to.r === 7) {
+          this.board[to.r][to.c] = DARK_KING;
+          newlyKinged = true;
+        }
+
+        this.lastMove = { from, to };
+
+        // Check for multi-jump requirement
+        if (jumped && !newlyKinged) {
+          const pieceMoves = this.getMovesForPiece(this.board, to.r, to.c);
+          const furtherJumps = pieceMoves.filter(m => m.jumped);
+          if (furtherJumps.length > 0) {
+            this.mustJumpFrom = { r: to.r, c: to.c };
+            return { isCaptured, newlyKinged, chainJumpAvailable: true };
+          }
+        }
+
+        this.mustJumpFrom = null;
+        this.turn = -this.turn; // Switch turn
+        return { isCaptured, newlyKinged, chainJumpAvailable: false };
+      }
+
+      /* Count piece tallies */
+      getCounts() {
+        let light = 0, dark = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (this.isLight(this.board[r][c])) light++;
+            if (this.isDark(this.board[r][c])) dark++;
+          }
+        }
+        return { light, dark };
+      }
+
+      checkGameOver() {
+        const moves = this.getAllLegalMoves(this.board, this.turn);
+        if (moves.length === 0) {
+          return this.turn === LIGHT ? DARK : LIGHT; // Opponent wins
+        }
+        const counts = this.getCounts();
+        if (counts.light === 0) return DARK;
+        if (counts.dark === 0) return LIGHT;
+        return null; // Game continues
+      }
+    }
+
+    /* =========================================================================
+       AI ENGINE (Minimax with Alpha-Beta Pruning)
+       ========================================================================= */
+    class CheckersAI {
+      static getBestMove(game, difficulty) {
+        const legalMoves = game.getAllLegalMoves(game.board, DARK);
+        if (legalMoves.length === 0) return null;
+        if (legalMoves.length === 1) return legalMoves[0];
+
+        let depth = 3; // Default Medium
+        if (difficulty === 'easy') depth = 1;
+        if (difficulty === 'hard') depth = 5;
+
+        // If Easy, occasionally pick random move for casual feel
+        if (difficulty === 'easy' && Math.random() < 0.3) {
+          return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+        }
+
+        let bestScore = -Infinity;
+        let bestMoves = [];
+
+        for (const move of legalMoves) {
+          const simulatedBoard = this.cloneBoard(game.board);
+          this.applyMoveToBoard(simulatedBoard, move);
+
+          const score = this.minimax(
+            simulatedBoard,
+            depth - 1,
+            -Infinity,
+            Infinity,
+            false, // Next turn is Human (minimizing)
+            DARK
+          );
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [move];
+          } else if (score === bestScore) {
+            bestMoves.push(move);
+          }
+        }
+
+        return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+      }
+
+      static minimax(board, depth, alpha, beta, isMaximizing, aiPlayer) {
+        const winner = this.evaluateWinner(board);
+        if (winner === aiPlayer) return 10000 + depth;
+        if (winner === -aiPlayer) return -10000 - depth;
+        if (depth === 0) return this.evaluateBoard(board, aiPlayer);
+
+        const currentPlayer = isMaximizing ? aiPlayer : -aiPlayer;
+        const moves = this.getBoardMoves(board, currentPlayer);
+
+        if (moves.length === 0) {
+          // Current player has no moves left -> loses
+          return isMaximizing ? -10000 : 10000;
+        }
+
+        if (isMaximizing) {
+          let maxEval = -Infinity;
+          for (const move of moves) {
+            const nextBoard = this.cloneBoard(board);
+            this.applyMoveToBoard(nextBoard, move);
+            const evalScore = this.minimax(nextBoard, depth - 1, alpha, beta, false, aiPlayer);
+            maxEval = Math.max(maxEval, evalScore);
+            alpha = Math.max(alpha, evalScore);
+            if (beta <= alpha) break; // Alpha-Beta Cutoff
+          }
+          return maxEval;
+        } else {
+          let minEval = Infinity;
+          for (const move of moves) {
+            const nextBoard = this.cloneBoard(board);
+            this.applyMoveToBoard(nextBoard, move);
+            const evalScore = this.minimax(nextBoard, depth - 1, alpha, beta, true, aiPlayer);
+            minEval = Math.min(minEval, evalScore);
+            beta = Math.min(beta, evalScore);
+            if (beta <= alpha) break; // Alpha-Beta Cutoff
+          }
+          return minEval;
+        }
+      }
+
+      static evaluateBoard(board, aiPlayer) {
+        let score = 0;
+
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const piece = board[r][c];
+            if (piece === EMPTY) continue;
+
+            const isAI = (piece === DARK || piece === DARK_KING);
+            const multiplier = isAI ? 1 : -1;
+            const isKing = (piece === DARK_KING || piece === LIGHT_KING);
+
+            // Material Weight
+            let pieceVal = isKing ? 18 : 10;
+
+            // Positional Weighting
+            // Normal pieces incentivized to advance
+            if (!isKing) {
+              pieceVal += isAI ? (r * 1.2) : ((7 - r) * 1.2);
+            }
+
+            // Center Board Control Bonus
+            if (c >= 2 && c <= 5 && r >= 2 && r <= 5) {
+              pieceVal += 2.0;
+            }
+
+            // Back Row Defense Protection Bonus
+            if (isAI && r === 0 && !isKing) pieceVal += 2.5;
+            if (!isAI && r === 7 && !isKing) pieceVal += 2.5;
+
+            score += pieceVal * multiplier;
+          }
+        }
+        return score;
+      }
+
+      static cloneBoard(board) {
+        return board.map(row => [...row]);
+      }
+
+      static applyMoveToBoard(board, move) {
+        const { from, to, jumped } = move;
+        const piece = board[from.r][from.c];
+        board[to.r][to.c] = piece;
+        board[from.r][from.c] = EMPTY;
+
+        if (jumped) {
+          board[jumped.r][jumped.c] = EMPTY;
+        }
+
+        // Kinging
+        if (piece === DARK && to.r === 7) board[to.r][to.c] = DARK_KING;
+        if (piece === LIGHT && to.r === 0) board[to.r][to.c] = LIGHT_KING;
+      }
+
+      static getBoardMoves(board, player) {
+        const gameHelper = new CheckersGame();
+        return gameHelper.getAllLegalMoves(board, player);
+      }
+
+      static evaluateWinner(board) {
+        let light = 0, dark = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (board[r][c] === LIGHT || board[r][c] === LIGHT_KING) light++;
+            if (board[r][c] === DARK || board[r][c] === DARK_KING) dark++;
+          }
+        }
+        if (light === 0) return DARK;
+        if (dark === 0) return LIGHT;
+        return null;
+      }
+    }
+
+    /* =========================================================================
+       UI CONTROLLER & EVENT LISTENERS
+       ========================================================================= */
+    const game = new CheckersGame();
+
+    // DOM Elements
+    const boardEl = document.getElementById('board');
+    const statusTextEl = document.getElementById('statusText');
+    const countLightEl = document.getElementById('count-light');
+    const countDarkEl = document.getElementById('count-dark');
+    const undoBtn = document.getElementById('undoBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const aiTurnIndicator = document.getElementById('aiTurnIndicator');
+    const humanTurnIndicator = document.getElementById('humanTurnIndicator');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalRestartBtn = document.getElementById('modalRestartBtn');
+    const diffBtns = document.querySelectorAll('.diff-btn');
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const allLegalMoves = game.getAllLegalMoves(game.board, game.turn);
+      const isJumpForced = allLegalMoves.some(m => m.jumped);
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const sq = document.createElement('div');
+          const isDarkSquare = (r + c) % 2 === 1;
+          sq.className = `w-full h-full flex items-center justify-center ${isDarkSquare ? 'sq-dark' : 'sq-light'}`;
+          sq.dataset.row = r;
+          sq.dataset.col = c;
+
+          if (isDarkSquare) {
+            // Highlight Last Move
+            if (game.lastMove) {
+              if (game.lastMove.from.r === r && game.lastMove.from.c === c) sq.classList.add('last-move-src');
+              if (game.lastMove.to.r === r && game.lastMove.to.c === c) sq.classList.add('last-move-dst');
+            }
+
+            // Highlight Valid Destinations
+            const isValidDestination = game.validMovesForSelected.some(m => m.to.r === r && m.to.c === c);
+            if (isValidDestination) {
+              sq.classList.add('highlight-move');
+              sq.addEventListener('click', () => handleSquareClick(r, c));
+            }
+
+            // Render Piece if present
+            const pieceVal = game.board[r][c];
+            if (pieceVal !== EMPTY) {
+              const pieceEl = document.createElement('div');
+              const isLightPiece = game.isLight(pieceVal);
+              const isKing = game.isKing(pieceVal);
+
+              pieceEl.className = `piece ${isLightPiece ? 'piece-light' : 'piece-dark'}`;
+
+              // Highlight Selected Piece
+              if (game.selectedSquare && game.selectedSquare.r === r && game.selectedSquare.c === c) {
+                pieceEl.classList.add('selected');
+              }
+
+              // Highlight forced jump piece
+              if (game.turn === game.getPieceOwner(pieceVal) && isJumpForced) {
+                const canThisPieceJump = allLegalMoves.some(m => m.from.r === r && m.from.c === c && m.jumped);
+                if (canThisPieceJump) pieceEl.classList.add('must-jump');
+              }
+
+              // King Crown SVG
+              if (isKing) {
+                pieceEl.innerHTML = CROWN_SVG;
+              }
+
+              // Event listener for piece selection
+              pieceEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handlePieceClick(r, c);
+              });
+
+              sq.appendChild(pieceEl);
+            }
+          }
+
+          boardEl.appendChild(sq);
+        }
+      }
+
+      updateUIStats(isJumpForced);
+    }
+
+    function updateUIStats(isJumpForced) {
+      const counts = game.getCounts();
+      countLightEl.textContent = counts.light;
+      countDarkEl.textContent = counts.dark;
+
+      undoBtn.disabled = game.history.length === 0 || game.isAiThinking;
+
+      if (game.turn === LIGHT) {
+        humanTurnIndicator.classList.remove('hidden');
+        aiTurnIndicator.classList.add('hidden');
+        if (isJumpForced) {
+          statusTextEl.textContent = "Jump Required! You must capture the opposing piece.";
+          statusTextEl.className = "text-xs sm:text-sm font-semibold text-rose-300 animate-pulse";
+        } else {
+          statusTextEl.textContent = "Your Turn! Select a light piece.";
+          statusTextEl.className = "text-xs sm:text-sm font-medium text-amber-200";
+        }
+      } else {
+        humanTurnIndicator.classList.add('hidden');
+        aiTurnIndicator.classList.remove('hidden');
+        statusTextEl.textContent = "AI is thinking...";
+        statusTextEl.className = "text-xs sm:text-sm font-medium text-amber-300 italic";
+      }
+    }
+
+    function handlePieceClick(r, c) {
+      if (game.turn !== LIGHT || game.isAiThinking) return;
+
+      const piece = game.board[r][c];
+      if (!game.isLight(piece)) return;
+
+      // If in middle of forced multi-jump, cannot select other pieces
+      if (game.mustJumpFrom && (game.mustJumpFrom.r !== r || game.mustJumpFrom.c !== c)) {
+        return;
+      }
+
+      const allMoves = game.getAllLegalMoves(game.board, LIGHT);
+      const pieceMoves = allMoves.filter(m => m.from.r === r && m.from.c === c);
+
+      if (pieceMoves.length > 0) {
+        audio.playWoodClick();
+        game.selectedSquare = { r, c };
+        game.validMovesForSelected = pieceMoves;
+      } else {
+        game.selectedSquare = null;
+        game.validMovesForSelected = [];
+      }
+
+      renderBoard();
+    }
+
+    function handleSquareClick(r, c) {
+      if (game.turn !== LIGHT || game.isAiThinking || !game.selectedSquare) return;
+
+      const chosenMove = game.validMovesForSelected.find(m => m.to.r === r && m.to.c === c);
+      if (!chosenMove) return;
+
+      executeMove(chosenMove);
+    }
+
+    function executeMove(move) {
+      const result = game.makeMove(move);
+
+      if (result.newlyKinged) {
+        audio.playKingSound();
+      } else if (result.isCaptured) {
+        audio.playJumpSound();
+      } else {
+        audio.playWoodClick();
+      }
+
+      game.selectedSquare = null;
+      game.validMovesForSelected = [];
+
+      renderBoard();
+
+      // Check Game Over
+      const winner = game.checkGameOver();
+      if (winner) {
+        showGameOver(winner);
+        return;
+      }
+
+      // Handle multi-jump sequence
+      if (result.chainJumpAvailable) {
+        game.selectedSquare = { r: move.to.r, c: move.to.c };
+        const allMoves = game.getAllLegalMoves(game.board, game.turn);
+        game.validMovesForSelected = allMoves.filter(m => m.from.r === move.to.r && m.from.c === move.to.c);
+        renderBoard();
+        return;
+      }
+
+      // Trigger AI turn if it's AI's turn
+      if (game.turn === DARK) {
+        triggerAiTurn();
+      }
+    }
+
+    function triggerAiTurn() {
+      game.isAiThinking = true;
+      renderBoard();
+
+      // Delay AI calculation slightly for smooth UX & UI feel
+      setTimeout(() => {
+        const aiMove = CheckersAI.getBestMove(game, game.difficulty);
+        game.isAiThinking = false;
+
+        if (aiMove) {
+          const result = game.makeMove(aiMove);
+
+          if (result.newlyKinged) audio.playKingSound();
+          else if (result.isCaptured) audio.playJumpSound();
+          else audio.playWoodClick();
+
+          const winner = game.checkGameOver();
+          if (winner) {
+            renderBoard();
+            showGameOver(winner);
+            return;
+          }
+
+          // Handle AI multi-jumps automatically
+          if (result.chainJumpAvailable) {
+            triggerAiTurn();
+            return;
+          }
+        }
+        renderBoard();
+      }, 450);
+    }
+
+    function showGameOver(winner) {
+      if (winner === LIGHT) {
+        audio.playWinFanfare();
+        modalIcon.textContent = "🏆";
+        modalTitle.textContent = "VICTORY!";
+        modalDesc.textContent = "Outstanding strategy! You defeated the AI opponent.";
+      } else {
+        modalIcon.textContent = "👑";
+        modalTitle.textContent = "DEFEAT";
+        modalDesc.textContent = "The AI conquered the board this time. Care for a rematch?";
+      }
+      gameOverModal.classList.remove('hidden');
+    }
+
+    /* Event Handlers */
+    undoBtn.addEventListener('click', () => {
+      if (game.undo()) {
+        audio.playWoodClick();
+        renderBoard();
+      }
+    });
+
+    newGameBtn.addEventListener('click', () => {
+      audio.playWoodClick();
+      game.initBoard();
+      gameOverModal.classList.add('hidden');
+      renderBoard();
+    });
+
+    modalRestartBtn.addEventListener('click', () => {
+      audio.playWoodClick();
+      game.initBoard();
+      gameOverModal.classList.add('hidden');
+      renderBoard();
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      soundIcon.textContent = audio.enabled ? "🔊" : "🔇";
+    });
+
+    diffBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        diffBtns.forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        game.difficulty = e.target.dataset.diff;
+        
+        const nameMap = { easy: 'AI (Novice)', medium: 'AI (Medium)', hard: 'AI (Master)' };
+        document.getElementById('aiNameText').textContent = nameMap[game.difficulty];
+        audio.playWoodClick();
+      });
+    });
+
+    // Start Game
+    renderBoard();
+  </script>
+</body>
+</html>
+
